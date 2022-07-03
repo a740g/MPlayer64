@@ -205,37 +205,37 @@ Sub PrintWelcomeScreen
     Else
         Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ù_ù)"
     End If
-    Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |"
+    Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
     Color 15
-    Print "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-."
-    Print "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |"
+    Print "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-.        "
+    Print "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |          "
     Color 10
     Print "_._______`-' ` `-'   `-'     '   '   ' ' `-'  '   '    ' `-` `-| `-' '________._"
-    Print " |                                                           `-'              |"
-    Print " |                                                                            |"
-    Print " |                                                                            |"
+    Print " |                                                           `-'              | "
+    Print " |                                                                            | "
+    Print " |                                                                            | "
     Color 14
     Print " |                                                                            | "
     Print " |                     ";: Color 11: Print "ESC";: Color 8: Print " .................... ";: Color 13: Print "NEXT/QUIT";: Color 14: Print "                     | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |                     ";: Color 11: Print "SPC";: Color 8: Print " ........................ ";: Color 13: Print "PAUSE";: Color 14: Print "                     | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |                     ";: Color 11: Print "=|+";: Color 8: Print " .............. ";: Color 13: Print "INCREASE VOLUME";: Color 14: Print "                     | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |                     ";: Color 11: Print "-|_";: Color 8: Print " .............. ";: Color 13: Print "DECREASE VOLUME";: Color 14: Print "                     | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |                     ";: Color 11: Print "L|l";: Color 8: Print " ......................... ";: Color 13: Print "LOOP";: Color 14: Print "                     | "
-    Print " |                                                                            |"
-    Print " |                                                                            |"
+    Print " |                                                                            | "
+    Print " |                                                                            | "
     Print " |   ";: Color 9: Print "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: Color 14: Print "   | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " | ";: Color 9: Print "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: Color 14: Print "  | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |    ";: Color 9: Print "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: Color 14: Print "    | "
-    Print " |                                                                            |"
+    Print " |                                                                            | "
     Print " |                 ";: Color 9: Print "https://github.com/a740g/QB64-MIDI-Player";: Color 14: Print "                  | "
     Print "_|_                                                                          _|_"
-    Print " `/__________________________________________________________________________\'";
+    Print " `/__________________________________________________________________________\' ";
 End Sub
 
 
