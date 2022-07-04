@@ -24,7 +24,7 @@ $VersionInfo:OriginalFilename='QB64MIDP.exe'
 $VersionInfo:ProductName='MIDI Player'
 $VersionInfo:Web='https://github.com/a740g'
 $VersionInfo:Comments='https://github.com/a740g'
-$VersionInfo:FILEVERSION#=1,0,0,0
+$VersionInfo:FILEVERSION#=1,0,0,4
 $VersionInfo:PRODUCTVERSION#=1,0,0,0
 '-----------------------------------------------------------------------------------------------------
 
