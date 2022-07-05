@@ -31,7 +31,7 @@ $If MIDIPLAYER_BI = UNDEFINED Then
     ' QB64 specific stuff
     Type TSFPlayerType
         isPaused As Byte ' Set to true if tune is paused
-        soundBuffer As MEM ' This is the buffer that holds the rendered samples from libxmp
+        soundBuffer As MEM ' This is the buffer that holds the rendered samples from TSF
         soundBufferSize As Unsigned Long ' Size of the render buffer
         soundHandle As Long ' The sound pipe that we wll use to play the rendered samples
     End Type

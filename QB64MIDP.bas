@@ -74,7 +74,7 @@ System 0
 '-----------------------------------------------------------------------------------------------------
 ' FUNCTIONS & SUBROUTINES
 '-----------------------------------------------------------------------------------------------------
-' Initializes, loads and plays a mod file
+' Initializes, loads and plays a MIDI file
 ' Also checks for input, shows info etc
 Sub PlaySong (fileName As String)
     If Not TSFLoadFile(fileName) Then
