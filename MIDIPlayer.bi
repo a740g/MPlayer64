@@ -43,22 +43,22 @@ $If MIDIPLAYER_BI = UNDEFINED Then
     ' Anything with a '__' prefix is not supposed to be called directly
     ' There are QB64 wrappers for these functions
     Declare CustomType Library "./MIDIPlayer"
-        Function __TSFInitialize& (ByVal sample_rate As Long)
+        Function __TSFInitialize& (ByVal nSampleRate As Long)
         Function TSFIsInitialized&
         Sub __TSFFinalize
-        Function __TSFLoadFile& (midi_filename As String)
+        Function __TSFLoadFile& (sFilename As String)
         Function TSFIsFileLoaded&
         Sub TSFStartPlayer
         Function TSFIsPlaying&
         Function TSFGetIsLooping&
-        Sub TSFSetIsLooping (ByVal looping As Long)
+        Sub TSFSetIsLooping (ByVal nLooping As Long)
         Sub TSFStopPlayer
         Function TSFGetVolume&
-        Sub TSFSetVolume (ByVal volume As Long)
+        Sub TSFSetVolume (ByVal nVolume As Long)
         Function TSFGetTotalTime#
         Function TSFGetCurrentTime#
         Function TSFGetActiveVoices&
-        Sub __TSFRender (ByVal buffer As Offset, Byval size As Long)
+        Sub __TSFRender (ByVal oBuffer As Offset, Byval nSize As Long)
     End Declare
     '-----------------------------------------------------------------------------------------------------
 
