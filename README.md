@@ -19,15 +19,15 @@ This is a [QB64](https://github.com/QB64-Phoenix-Edition/QB64pe) compatible MIDI
 Function TSFInitialize&
 Function TSFIsInitialized&
 Sub TSFFinalize
-Function TSFLoadFile%% (midi_filename As String)
+Function TSFLoadFile%% (sFilename As String)
 Function TSFIsFileLoaded&
 Sub TSFStartPlayer
 Function TSFIsPlaying&
 Function TSFGetIsLooping&
-Sub TSFSetIsLooping (looping As Long)
+Sub TSFSetIsLooping (nLooping As Long)
 Sub TSFStopPlayer
 Function TSFGetVolume&
-Sub TSFSetVolume (volume As Long)
+Sub TSFSetVolume (nVolume As Long)
 Function TSFGetTotalTime#
 Function TSFGetCurrentTime#
 Function TSFGetActiveVoices&
