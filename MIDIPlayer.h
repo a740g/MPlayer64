@@ -173,9 +173,8 @@ int __TSFLoadFile(char* midi_filename)
 		g_TinyMidiLoader = tml_load_filename(midi_filename);
 		if (!g_TinyMidiLoader) return QB_FALSE;
 
-		int dummy1; unsigned int dummy2;	// We need some dummy variables for stuff that we do not need below
-		// Get the total duration of the song
-		tml_get_info(g_TinyMidiLoader, &dummy1, &dummy1, &dummy1, &dummy2, &g_TotalMsec);
+		// Get the total duration of the song ignoring the rest of the stuff
+		tml_get_info(g_TinyMidiLoader, NULL, NULL, NULL, NULL, &g_TotalMsec);
 
 		return QB_TRUE;
 	}
