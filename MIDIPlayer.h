@@ -208,9 +208,17 @@ int __TSFInitialize(int sample_rate)
 	// Return success if we are already initialized
 	if (g_TinySoundFont) return QB_TRUE;
 
-	// Attempt to load the soundfont and initialize TSF
-	g_TinySoundFont = tsf_load_memory(soundfont, sizeof(soundfont));
-	if (!g_TinySoundFont) return QB_FALSE;
+	// Attempt to load a SoundFont from a file
+	g_TinySoundFont = tsf_load_filename("soundfont.sf2");
+
+	if (!g_TinySoundFont)
+	{
+		// Attempt to load the soundfont from memory
+		g_TinySoundFont = tsf_load_memory(soundfont, sizeof(soundfont));
+
+		// Return failue if loading from memory also failed. This should not happen though
+		if (!g_TinySoundFont) return QB_FALSE;
+	}
 
 	// Save the sample rate
 	// No checks are done. Bad stuff may happen if this is garbage
