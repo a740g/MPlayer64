@@ -251,7 +251,7 @@ void __TSFRender(char* buffer, int size)
 			{
 			case TML_PROGRAM_CHANGE: // Channel program (preset) change (special handling for 10th MIDI channel with drums)
 				tsf_channel_set_presetnumber(g_TinySoundFont, g_MidiMessage->channel, g_MidiMessage->program, (g_MidiMessage->channel == 9));
-				//tsf_channel_midi_control(g_TinySoundFont, g_MidiMessage->channel, TML_ALL_NOTES_OFF, 0);	// https://github.com/schellingb/TinySoundFont/issues/59
+				tsf_channel_midi_control(g_TinySoundFont, g_MidiMessage->channel, TML_ALL_NOTES_OFF, 0);	// https://github.com/schellingb/TinySoundFont/issues/59
 				break;
 			case TML_NOTE_ON: // Play a note
 				tsf_channel_note_on(g_TinySoundFont, g_MidiMessage->channel, g_MidiMessage->key, g_MidiMessage->velocity / 127.0f);
