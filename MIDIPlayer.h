@@ -268,10 +268,10 @@ void __TSFRender(char* buffer, int size)
 			}
 		}
 
-		// Render the block of audio samples in float format
+		// Render the block of audio samples in short (16-bit signed) format
 		tsf_render_short(g_TinySoundFont, (short*)buffer, SampleBlock, 0);
 
-		// Reset the MIDI message pointer if we are looping & have reach the end of the message list
+		// Reset the MIDI message pointer if we are looping & have reached the end of the message list
 		if (g_Looping && !g_MidiMessage)
 		{
 			g_MidiMessage = g_TinyMidiLoader;
