@@ -255,7 +255,7 @@ Sub ProcessCommandLine
 End Sub
 
 
-' Processes the command line one file at a time
+' Processes dropped files one file at a time
 Sub ProcessDroppedFiles
     If TotalDroppedFiles > 0 Then
         ' Make a copy of the dropped file and clear the list
