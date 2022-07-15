@@ -111,6 +111,11 @@ Sub PlaySong (fileName As String)
 
             Case 76, 108
                 TSFSetIsLooping Not TSFGetIsLooping
+
+                'Case 21248 ' Hack to delete the playing file from the filesystem with Shit+Delete!
+                '    Kill fileName
+                '    k = 27
+
         End Select
 
         If loopCounter Mod 2 = 0 Then DrawInfoScreen ' Draw every alternate frame
