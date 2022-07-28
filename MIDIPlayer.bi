@@ -17,9 +17,8 @@ $If MIDIPLAYER_BI = UNDEFINED Then
     ' CONSTANTS
     '-----------------------------------------------------------------------------------------------------
     Const TSF_SOUND_BUFFER_CHANNELS = 2 ' 2 channel (stereo)
-    Const TSF_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES = 2 ' 2 bytes (16-bits)
-    Const TSF_SOUND_BUFFER_SAMPLE_SIZE = TSF_SOUND_BUFFER_CHANNELS * TSF_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES
-    Const TSF_SOUND_BUFFER_SIZE_MULTIPLIER = 0.02322 ' This is what we will multiply the buffer size with to get the final size
+    Const TSF_SOUND_BUFFER_SAMPLE_SIZE = 4 ' 4 bytes (32-bits floating point)
+    Const TSF_SOUND_BUFFER_FRAME_SIZE = TSF_SOUND_BUFFER_SAMPLE_SIZE * TSF_SOUND_BUFFER_CHANNELS
     Const TSF_SOUND_TIME_MIN = 0.2 ' We will check that we have this amount of time left in the QB64 sound pipe
 
     Const TSF_VOLUME_MAX = 100 ' Max volume in percentage
