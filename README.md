@@ -37,3 +37,7 @@ Sub TSFUpdatePlayer
 ## Icon
 
 [Icon](https://iconarchive.com/artist/studiomx.html) by Maximilian Novikov
+
+## Important note
+
+MIDI support is built into [QBPE with miniaudio backend](https://github.com/a740g/QBPE). The [miniaudio](https://miniaud.io/) backend in this version of OBPE uses [TinySoundFont](https://github.com/schellingb/TinySoundFont) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont). So, this will not compile with [QBPE with miniaudio backend](https://github.com/a740g/QBPE). Use this only with QB64 and QBPE with OpenAL backend.

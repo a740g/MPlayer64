@@ -109,7 +109,7 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
             ' Push the samples to the sound pipe
             Dim i As Long
             For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
-                SndRaw MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Single), MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Single), TSFPlayer.soundHandle
+                SndRaw MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Integer) / 32768!, TSFPlayer.soundHandle
             Next
         End If
     End Sub
