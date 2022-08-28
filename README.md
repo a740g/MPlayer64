@@ -40,4 +40,4 @@ Sub TSFUpdatePlayer
 
 ## Important note
 
-MIDI support will be built into [QB64-PE v3.1.0+](https://github.com/QB64-Phoenix-Edition/QB64pe). The [miniaudio](https://miniaud.io/) backend in this version of OB64-PE uses [TinySoundFont](https://github.com/schellingb/TinySoundFont) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont). So, this will not compile with version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) >= v3.1.0 with the default miniaudio backend selected. Use this only with QB64 and QB64-PE with OpenAL backend.
+MIDI support will be built into [QB64-PE v3.1.0+](https://github.com/QB64-Phoenix-Edition/QB64pe). The [miniaudio](https://miniaud.io/) backend in this version of OB64-PE uses [TinySoundFont](https://github.com/schellingb/TinySoundFont) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont). So, this will not compile with versions of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) >= v3.1.0 with the default miniaudio backend selected. Use this only with QB64 and QB64-PE with OpenAL backend.
