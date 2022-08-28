@@ -4,6 +4,7 @@
 // Copyright (c) 2022 Samuel Gomes
 //
 // This uses TinySoundFont + TinyMidiLoader libraries from https://github.com/schellingb/TinySoundFont
+// Soundfont (awe32rom.h) from https://github.com/mattiasgustavsson/dos-like
 //
 //-----------------------------------------------------------------------------------------------------
 
@@ -14,7 +15,7 @@
 #include "tsf.h"
 #define TML_IMPLEMENTATION
 #include "tml.h"
-#include "soundfont.h"
+#include "awe32rom.h"
 //-----------------------------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------------------------------
@@ -203,7 +204,7 @@ int __TSFInitialize(int sample_rate)
 	if (!g_TinySoundFont)
 	{
 		// Attempt to load the soundfont from memory
-		g_TinySoundFont = tsf_load_memory(soundfont, sizeof(soundfont));
+		g_TinySoundFont = tsf_load_memory(awe32rom, sizeof(awe32rom));
 
 		// Return failue if loading from memory also failed. This should not happen though
 		if (!g_TinySoundFont)
