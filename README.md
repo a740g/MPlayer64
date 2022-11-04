@@ -38,6 +38,9 @@ Sub TSFUpdatePlayer
 
 [Icon](https://iconarchive.com/artist/studiomx.html) by Maximilian Novikov
 
-## Important note
+## Important notes
 
-MIDI support is built into [QB64-PE v3.2.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/). The [miniaudio](https://miniaud.io/) backend in this version of OB64-PE uses [TinySoundFont](https://github.com/schellingb/TinySoundFont) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont). So, this is not required with versions of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) >= v3.2.0 with the default miniaudio backend selected. Also see [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT).
+- MIDI support is built into [QB64-PE v3.2.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) using [miniaudio](https://miniaud.io/), [TinySoundFont](https://github.com/schellingb/TinySoundFont), and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont)
+- This is not required with versions of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) >= v3.2.0 with the default miniaudio backend selected
+- This will only compile with [QB64-PE v3.2.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) if [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT) is not used
+- This will not compile with some version of QB64 or may produce poor audio quality due to audio mixing & clipping bugs in those versions

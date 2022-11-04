@@ -228,9 +228,9 @@ int __TSFInitialize(int sample_rate)
 void __TSFRender(char *buffer, int size)
 {
 	// Number of samples to process
-	int SampleBlock, SampleCount = (size / (2 * sizeof(short))); // 2 channels, 16-bit (2 bytes) samples
+	int SampleBlock, SampleCount = (size / (2 * sizeof(float))); // 2 channels, 32-bit FP (4 bytes) samples
 
-	for (SampleBlock = TSF_RENDER_EFFECTSAMPLEBLOCK; SampleCount; SampleCount -= SampleBlock, buffer += (SampleBlock * (2 * sizeof(short))))
+	for (SampleBlock = TSF_RENDER_EFFECTSAMPLEBLOCK; SampleCount; SampleCount -= SampleBlock, buffer += (SampleBlock * (2 * sizeof(float))))
 	{
 		// We progress the MIDI playback and then process TSF_RENDER_EFFECTSAMPLEBLOCK samples at once
 		if (SampleBlock > SampleCount)
@@ -260,8 +260,8 @@ void __TSFRender(char *buffer, int size)
 			}
 		}
 
-		// Render the block of audio samples in short (16-bit signed) format
-		tsf_render_short(g_TinySoundFont, (short *)buffer, SampleBlock, 0);
+		// Render the block of audio samples in float format
+		tsf_render_float(g_TinySoundFont, (float *)buffer, SampleBlock, 0);
 
 		// Reset the MIDI message pointer if we are looping & have reached the end of the message list
 		if (g_Looping && !g_MidiMessage)

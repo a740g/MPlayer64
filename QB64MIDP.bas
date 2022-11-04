@@ -173,9 +173,9 @@ Sub DrawInfoScreen
     Color 2: PrintString (532, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 96 'framecolor/origin
     For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
-        lSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Integer)
+        lSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Single)
         xp = (ow / ns * (i / TSF_SOUND_BUFFER_SAMPLE_SIZE)) + x
-        yp = (lSamp / 32768 * oh)
+        yp = lSamp * oh
         If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
         If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
     Next
@@ -188,9 +188,9 @@ Sub DrawInfoScreen
     Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 224 'framecolor/origin
     For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
-        rSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Integer)
+        rSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Single)
         xp = (ow / ns * (i / TSF_SOUND_BUFFER_SAMPLE_SIZE)) + x
-        yp = (rSamp / 32768 * oh)
+        yp = rSamp * oh
         If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
         If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
     Next
@@ -208,7 +208,7 @@ Sub PrintWelcomeScreen
     ElseIf Timer Mod 13 = 0 Then
         Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (*_*)"
     Else
-        Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ù_ù)"
+        Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ï¿½_ï¿½)"
     End If
     Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
     Color 15
