@@ -32,6 +32,7 @@ $VersionInfo:PRODUCTVERSION#=1,0,0,0
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------
 Const APP_NAME = "QB64 MIDI Player"
+Const FRAME_RATE_MAX = 120
 '-----------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------
@@ -62,13 +63,13 @@ Do
     PrintWelcomeScreen
     k = KeyHit
     Display
-    Limit 120
+    Limit FRAME_RATE_MAX
 Loop Until k = 27
 
 ' Shutdown TSF
 TSFFinalize
 
-System 0
+System
 '-----------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------
@@ -77,6 +78,8 @@ System 0
 ' Initializes, loads and plays a MIDI file
 ' Also checks for input, shows info etc
 Sub PlaySong (fileName As String)
+    Shared TSFPlayer As TSFPlayerType
+
     If Not TSFLoadFile(fileName) Then
         Color 12
         Print: Print "Failed to load "; fileName; "!"
@@ -92,7 +95,7 @@ Sub PlaySong (fileName As String)
 
     TSFStartPlayer
 
-    Dim k As Long, loopCounter As Unsigned Long
+    Dim k As Long
 
     Do
         TSFUpdatePlayer
@@ -112,19 +115,19 @@ Sub PlaySong (fileName As String)
             Case 76, 108
                 TSFSetIsLooping Not TSFGetIsLooping
 
-                'Case 21248 ' Hack to delete the playing file from the filesystem with Shit+Delete!
-                '    Kill fileName
-                '    k = 27
+            Case 21248
+                If MessageBox(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 Then
+                    Kill fileName
+                    k = 27
+                End If
 
         End Select
 
-        If loopCounter Mod 2 = 0 Then DrawInfoScreen ' Draw every alternate frame
+        DrawInfoScreen
 
         Display
 
-        Limit 120
-
-        loopCounter = loopCounter + 1
+        Limit FRAME_RATE_MAX
     Loop Until Not TSFIsPlaying Or k = 27 Or TotalDroppedFiles > 0
 
     TSFStopPlayer
@@ -134,14 +137,12 @@ End Sub
 
 
 ' Draws the screen during playback
-' This part is mostly from RhoSigma's player code
 Sub DrawInfoScreen
-    Dim As Integer ow, oh, c, x, y, xp, yp
-    Dim As Long ns, i
+    Shared TSFPlayer As TSFPlayerType
+
+    Dim As Unsigned Long nsf, x
     Dim As Single lSamp, rSamp
     Dim As String minute, second
-
-    ns = TSFPlayer.soundBufferSize / TSF_SOUND_BUFFER_SAMPLE_SIZE 'number of samples in the buffer
 
     If TSFPlayer.isPaused Or Not TSFIsPlaying Then Color 12 Else Color 7
 
@@ -162,39 +163,34 @@ Sub DrawInfoScreen
     Locate 25, 7: Print "-|_ - DECREASE VOLUME"
     Locate 26, 7: Print "L|l - LOOP"
 
-    '--- animate wave form oscillators ---
-    'As the oscillators width is probably <> number of samples, we need to
-    'scale the x-position, same is with the amplitude (y-position).
-    ow = 597: oh = 46 'oscillator width/height
+    ' Animate wave form oscillators
+    ' As the oscillators width is probably <> number of samples, we need to scale the x-position, same is with the amplitude (y-position)
 
-    Line (20, 32)-(620, 144), 0, BF
-    Color 7: DrawStringCenter "Left Channel", 32
+    nsf = TSFPlayer.soundBufferSize \ TSF_SOUND_BUFFER_FRAME_SIZE 'number of sample frames in the buffer
+
+    Color 7: PrintString (224, 32), "Left Channel (Wave plot)"
     Color 2: PrintString (20, 32), "0 [ms]"
-    Color 2: PrintString (532, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
-    c = 7: x = 22: y = 96 'framecolor/origin
-    For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
-        lSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Single)
-        xp = (ow / ns * (i / TSF_SOUND_BUFFER_SAMPLE_SIZE)) + x
-        yp = lSamp * oh
-        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-        If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
-    Next
-    Line (20, 48)-(620, 144), c, B
+    Color 2: PrintString (556, 32), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    View (20, 48)-(620, 144), 0, 7 ' set a viewport to draw to so that even if we draw outside it gets clipped
 
-    '-----
-    Line (20, 160)-(620, 272), 0, BF
-    Color 7: DrawStringCenter "Right Channel", 160
-    Color 2: PrintString (20, 160), "0 [ms]"
-    Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
-    c = 7: x = 22: y = 224 'framecolor/origin
-    For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
-        rSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Single)
-        xp = (ow / ns * (i / TSF_SOUND_BUFFER_SAMPLE_SIZE)) + x
-        yp = rSamp * oh
-        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-        If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
+    For x = 0 To nsf - 1
+        lSamp = MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + x * TSF_SOUND_BUFFER_FRAME_SIZE, Single) ' get left channel sample
+        Line (x * 601 \ nsf, 47)-Step(0, lSamp * 47), 10 ' plot wave
     Next
-    Line (20, 176)-(620, 272), c, B
+
+    View
+
+    Color 7: PrintString (220, 160), "Right Channel (Wave plot)"
+    Color 2: PrintString (20, 160), "0 [ms]"
+    Color 2: PrintString (556, 160), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    View (20, 176)-(620, 272), 0, 7 ' set a viewport to draw to so that even if we draw outside it gets clipped
+
+    For x = 0 To nsf - 1
+        rSamp = MemGet(TSFPlayer.soundBuffer, TSF_SOUND_BUFFER_SAMPLE_SIZE + TSFPlayer.soundBuffer.OFFSET + x * TSF_SOUND_BUFFER_FRAME_SIZE, Single) ' get right channel sample
+        Line (x * 601 \ nsf, 47)-Step(0, rSamp * 47), 10 ' plot wave
+    Next
+
+    View
 End Sub
 
 
@@ -208,7 +204,7 @@ Sub PrintWelcomeScreen
     ElseIf Timer Mod 13 = 0 Then
         Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (*_*)"
     Else
-        Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ï¿½_ï¿½)"
+        Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ù_ù)"
     End If
     Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
     Color 15
@@ -273,13 +269,6 @@ Sub ProcessDroppedFiles
             If TotalDroppedFiles > 0 Then Exit For ' Exit the loop if we have dropped files
         Next
     End If
-End Sub
-
-
-' Centers a string on the screen
-' The function calculates the correct starting column position to center the string on the screen and then draws the actual text
-Sub DrawStringCenter (s As String, y As Integer)
-    PrintString ((Width / 2) - (PrintWidth(s) / 2), y), s
 End Sub
 
 

@@ -44,6 +44,8 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' This checks and initializes the underlying C library
     Function TSFInitialize&
+        Shared TSFPlayer As TSFPlayerType
+
         ' Exit if we are already initialized
         If TSFIsInitialized Then
             TSFInitialize = TRUE
@@ -75,6 +77,8 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
     ' The closes the library and frees all resources
     Sub TSFFinalize
         If TSFIsInitialized Then
+            Shared TSFPlayer As TSFPlayerType
+
             ' Free the sound pipe
             SndRawDone TSFPlayer.soundHandle ' Sumbit whatever is remaining in the raw buffer for playback
             SndClose TSFPlayer.soundHandle ' Close QB64 sound pipe
@@ -97,6 +101,8 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
     ' This handles playback and keeping track of the render buffer
     ' You can call this as frequenctly as you want. The routine will simply exit if nothing is to be done
     Sub TSFUpdatePlayer
+        Shared TSFPlayer As TSFPlayerType
+
         ' Only render more samples if song is playing, not paused and we do not have enough samples with the sound device
         If TSFIsPlaying And Not TSFPlayer.isPaused And SndRawLen(TSFPlayer.soundHandle) < TSF_SOUND_TIME_MIN Then
 
@@ -107,7 +113,7 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
             __TSFRender TSFPlayer.soundBuffer.OFFSET, TSFPlayer.soundBufferSize
 
             ' Push the samples to the sound pipe
-            Dim i As Long
+            Dim i As Unsigned Long
             For i = 0 To TSFPlayer.soundBufferSize - TSF_SOUND_BUFFER_SAMPLE_SIZE Step TSF_SOUND_BUFFER_FRAME_SIZE
                 SndRaw MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i, Single), MemGet(TSFPlayer.soundBuffer, TSFPlayer.soundBuffer.OFFSET + i + TSF_SOUND_BUFFER_SAMPLE_SIZE, Single), TSFPlayer.soundHandle
             Next
