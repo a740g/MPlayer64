@@ -64,7 +64,7 @@ Do
     k = KeyHit
     Display
     Limit FRAME_RATE_MAX
-Loop Until k = 27
+Loop Until k = KEY_ESCAPE
 
 ' Shutdown TSF
 TSFFinalize
@@ -103,22 +103,22 @@ Sub PlaySong (fileName As String)
         k = KeyHit
 
         Select Case k
-            Case 32
+            Case KEY_SPACE_BAR
                 TSFPlayer.isPaused = Not TSFPlayer.isPaused
 
-            Case 43, 61
+            Case KEY_PLUS, KEY_EQUALS ' + = volume up
                 TSFSetVolume TSFGetVolume + 1
 
-            Case 45, 95
+            Case KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
                 TSFSetVolume TSFGetVolume - 1
 
-            Case 76, 108
+            Case KEY_UPPER_L, KEY_LOWER_L
                 TSFSetIsLooping Not TSFGetIsLooping
 
             Case 21248
                 If MessageBox(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 Then
                     Kill fileName
-                    k = 27
+                    k = KEY_ESCAPE
                 End If
 
         End Select
@@ -128,7 +128,7 @@ Sub PlaySong (fileName As String)
         Display
 
         Limit FRAME_RATE_MAX
-    Loop Until Not TSFIsPlaying Or k = 27 Or TotalDroppedFiles > 0
+    Loop Until Not TSFIsPlaying Or k = KEY_ESCAPE Or TotalDroppedFiles > 0
 
     TSFStopPlayer
 
