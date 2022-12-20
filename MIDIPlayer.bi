@@ -19,7 +19,7 @@ $If MIDIPLAYER_BI = UNDEFINED Then
     Const TSF_SOUND_BUFFER_CHANNELS = 2 ' 2 channels (stereo)
     Const TSF_SOUND_BUFFER_SAMPLE_SIZE = 4 ' 4 bytes (32-bits floating point)
     Const TSF_SOUND_BUFFER_FRAME_SIZE = TSF_SOUND_BUFFER_SAMPLE_SIZE * TSF_SOUND_BUFFER_CHANNELS
-    Const TSF_SOUND_TIME_MIN = 0.1 ' We will check that we have this amount of time left in the QB64 sound pipe
+    Const TSF_SOUND_TIME_MIN = 0.2 ' We will check that we have this amount of time left in the QB64 sound pipe
 
     Const TSF_VOLUME_MAX = 100 ' Max volume in percentage
     '-----------------------------------------------------------------------------------------------------
