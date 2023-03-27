@@ -16,22 +16,25 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) compatible M
 ## API
 
 ```VB
-Function TSFInitialize&
-Function TSFIsInitialized&
-Sub TSFFinalize
-Function TSFLoadFile%% (sFilename As String)
-Function TSFIsFileLoaded&
-Sub TSFStartPlayer
-Function TSFIsPlaying&
-Function TSFGetIsLooping&
-Sub TSFSetIsLooping (nLooping As Long)
-Sub TSFStopPlayer
-Function TSFGetVolume&
-Sub TSFSetVolume (nVolume As Long)
-Function TSFGetTotalTime#
-Function TSFGetCurrentTime#
-Function TSFGetActiveVoices&
-Sub TSFUpdatePlayer
+Function MIDI_Initialize& (useFM As Byte)
+Function MIDI_IsInitialized&
+Sub MIDI_Finalize
+Function MIDI_LoadTuneFromFile%% (fileName As String)
+Function MIDI_LoadTuneFromMemory%% (buffer As String)
+Function MIDI_IsTuneLoaded&
+Sub MIDI_StartPlayer
+Sub MIDI_StopPlayer
+Function MIDI_IsPlaying&
+Sub MIDI_SetLooping (ByVal nLooping As Long)
+Function MIDI_IsLooping&
+Sub MIDI_SetPause (isPaused As Byte)
+Function MIDI_IsPaused%%
+Sub MIDI_SetVolume (ByVal nVolume As Single)
+Function MIDI_GetVolume!
+Function MIDI_GetTotalTime#
+Function MIDI_GetCurrentTime#
+Function MIDI_GetActiveVoices~&
+Sub MIDI_UpdatePlayer
 ```
 
 ## Icon
