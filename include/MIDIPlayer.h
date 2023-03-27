@@ -37,8 +37,7 @@ static uint32_t sampleRate = 0;                // the mixing sample rate (should
 static float globalVolume = 1.0f;              // this is the global volume (0.0 - 1.0)
 static int32_t isLooping = QB_FALSE;           // flag to indicate if we should loop a song
 static int32_t isOPL3Active = QB_FALSE;        // flag to indicate if we are using TSF or OPL3
-static int16_t *tempBuffer16 = nullptr;        // this buffer will be used to render 16-bit 44100 samples from the OPL
-static float *tempBuffer32 = nullptr;          // this will contain the FP32 converted samples from tempBuffer16
+static int16_t *bufferOPL = nullptr;           // this buffer will be used to render 16-bit 44100 samples from the OPL
 
 /// @brief Check if MIDI library is initialized
 /// @return Returns QB64 TRUE if it is initialized
@@ -208,16 +207,10 @@ void __MIDI_Finalize()
             tsf_close((tsf *)contextTSFOPL3);
 
         // Free temp buffers if it was allocated
-        if (tempBuffer16)
+        if (bufferOPL)
         {
-            free(tempBuffer16);
-            tempBuffer16 = nullptr;
-        }
-
-        if (tempBuffer32)
-        {
-            free(tempBuffer32);
-            tempBuffer32 = nullptr;
+            free(bufferOPL);
+            bufferOPL = nullptr;
         }
 
         contextTSFOPL3 = nullptr;
@@ -327,15 +320,15 @@ static void __MIDI_RenderTSF(uint8_t *buffer, const uint32_t bufferSize)
     }
 }
 
-/// @brief A simple and efficient audio resampler. Set output to NULL to get the output buffer size in samples frames
-/// @param input The input sample frame buffer
-/// @param output The output sample frame buffer
+/// @brief A simple and efficient audio converter & resampler. Set output to NULL to get the output buffer size in samples frames
+/// @param input The input 16-bit integer sample frame buffer
+/// @param output The output 32-bit floating point sample frame buffer
 /// @param inSampleRate The input sample rate
 /// @param outSampleRate The output sample rate
 /// @param inputSize The number of samples frames in the input
 /// @param channels The number of channels for both input and output
 /// @return Returns the number of samples frames written to the output
-static uint64_t __MIDI_ResampleF32(const float *input, float *output, uint32_t inSampleRate, uint32_t outSampleRate, uint64_t inputSampleFrames, uint32_t channels)
+static uint64_t __MIDI_ResampleAndConvertFP32(const int16_t *input, float *output, uint32_t inSampleRate, uint32_t outSampleRate, uint64_t inputSampleFrames, uint32_t channels)
 {
     if (!input)
         return 0;
@@ -351,12 +344,15 @@ static uint64_t __MIDI_ResampleF32(const float *input, float *output, uint32_t i
     const double normFixed = (1.0 / (1LL << 32));
     auto step = ((uint64_t)(stepDist * fixedFraction + 0.5));
     uint64_t curOffset = 0;
+    float sampleFP1, sampleFP2;
 
     for (uint32_t i = 0; i < outputSize; i += 1)
     {
         for (uint32_t c = 0; c < channels; c += 1)
         {
-            *output++ = (float)(input[c] + (input[c + channels] - input[c]) * ((double)(curOffset >> 32) + ((curOffset & (fixedFraction - 1)) * normFixed)));
+            sampleFP1 = (float)input[c] / 32768.0f;
+            sampleFP2 = (float)input[c + channels] / 32768.0f;
+            *output++ = (float)(sampleFP1 + (sampleFP2 - sampleFP1) * ((double)(curOffset >> 32) + ((curOffset & (fixedFraction - 1)) * normFixed)));
         }
         curOffset += step;
         input += (curOffset >> 32) * channels;
@@ -375,11 +371,11 @@ static void __MIDI_RenderOPL(uint8_t *buffer, const uint32_t bufferSize)
     uint64_t sourceSampleFrameCount = ceil(((double)bufferSize * OPL_DEFAULT_SAMPLE_RATE) / (2.0 * sizeof(float) * (double)sampleRate));
 
     // Re-allocate the buffer to render 16-bit samples
-    auto tempBuffer = (uint8_t *)realloc(tempBuffer16, sourceSampleFrameCount * sizeof(int16_t) * 2);
+    auto tempBuffer = (uint8_t *)realloc(bufferOPL, sourceSampleFrameCount * sizeof(int16_t) * 2);
     if (!tempBuffer)
         return; // buffer allocation failed!
 
-    tempBuffer16 = (int16_t *)tempBuffer; // save the pointer to the reallocated buffer
+    bufferOPL = (int16_t *)tempBuffer; // save the pointer to the reallocated buffer
 
     // Number of samples to process
     uint32_t sampleBlock, frameCount = sourceSampleFrameCount;
@@ -424,19 +420,8 @@ static void __MIDI_RenderOPL(uint8_t *buffer, const uint32_t bufferSize)
         }
     }
 
-    // Reallocate another buffer for converting to FP32
-    tempBuffer = (uint8_t *)realloc(tempBuffer32, sourceSampleFrameCount * sizeof(float) * 2);
-    if (!tempBuffer)
-        return;
-
-    tempBuffer32 = (float *)tempBuffer; // save the buffer pointer
-
-    // Convert the sample buffer to FP32
-    for (uint64_t i = 0; i < (sourceSampleFrameCount << 1); i++)
-        tempBuffer32[i] = (float)tempBuffer16[i] / 32768.0f;
-
-    // Resample the buffer
-    __MIDI_ResampleF32(tempBuffer32, (float *)buffer, OPL_DEFAULT_SAMPLE_RATE, sampleRate, sourceSampleFrameCount, 2);
+    // Convert and resample the buffer
+    __MIDI_ResampleAndConvertFP32(bufferOPL, (float *)buffer, OPL_DEFAULT_SAMPLE_RATE, sampleRate, sourceSampleFrameCount, 2);
 }
 
 /// @brief The calls the correct render function based on which renderer was chosen
