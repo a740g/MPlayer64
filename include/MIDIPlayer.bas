@@ -21,7 +21,7 @@ $If MIDIPLAYER_BAS = UNDEFINED Then
     ' Small test code for debugging the library
     '-----------------------------------------------------------------------------------------------------
     '$Debug
-    'If MIDI_Initialize(TRUE) Then
+    'If MIDI_Initialize(FALSE) Then
     '    If MIDI_LoadTuneFromFile("../midis/COLDWAVE.mid") Then
     '        MIDI_StartPlayer
     '        MIDI_SetLooping TRUE
