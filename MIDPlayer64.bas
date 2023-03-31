@@ -12,24 +12,24 @@
 '-----------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------
-$ExeIcon:'./QB64MIDPlayer.ico'
+$ExeIcon:'./MIDPlayer64.ico'
 $VersionInfo:CompanyName=Samuel Gomes
-$VersionInfo:FileDescription=MIDI Player executable
-$VersionInfo:InternalName=QB64MIDIPlayer'
+$VersionInfo:FileDescription=MIDI Player 64 executable
+$VersionInfo:InternalName=MIDIPlayer64'
 $VersionInfo:LegalCopyright=Copyright (c) 2023, Samuel Gomes
 $VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
-$VersionInfo:OriginalFilename=QB64MIDPlayer.exe
-$VersionInfo:ProductName=QB64 MIDI Player
+$VersionInfo:OriginalFilename=MIDPlayer64.exe
+$VersionInfo:ProductName=MIDI Player 64
 $VersionInfo:Web=https://github.com/a740g
 $VersionInfo:Comments=https://github.com/a740g
-$VersionInfo:FILEVERSION#=2,0,0,0
-$VersionInfo:PRODUCTVERSION#=2,0,0,0
+$VersionInfo:FILEVERSION#=2,0,1,0
+$VersionInfo:PRODUCTVERSION#=2,0,1,0
 '-----------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------
-Const APP_NAME = "QB64 MIDI Player"
+Const APP_NAME = "MIDI Player 64"
 Const FRAME_RATE_MAX = 120
 '-----------------------------------------------------------------------------------------------------
 

@@ -40,6 +40,7 @@ Sub MIDI_UpdatePlayer
 
 - This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
 - Mixing this with QB64-PE's [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT) will not work
+- When you clone a repository that contains submodules, the submodules are not automatically cloned by default. You will need to use the `git submodule init` command followed by the `git submodule update` command to clone the submodules
 
 ## Icon
 
