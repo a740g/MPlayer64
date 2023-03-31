@@ -1,11 +1,11 @@
-# What is this?
+# MIDI PLAYER 64
 
 This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) compatible MIDI player library based on [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser) C single-header libraries.
 
 ![Screenshot](screenshots/Screenshot1.png)
 ![Screenshot](screenshots/Screenshot2.png)
 
-## Features
+## FEATURES
 
 - Easy plug-&-play API optimized for demos & games
 - Cross-platform (works on Windows, Linux & macOS)
@@ -36,12 +36,13 @@ Function MIDI_GetActiveVoices~&
 Sub MIDI_UpdatePlayer
 ```
 
-## Important notes
+## NOTES
 
 - This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
 - Mixing this with QB64-PE's [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT) will not work
-- When you clone a repository that contains submodules, the submodules are not automatically cloned by default. You will need to use the `git submodule init` command followed by the `git submodule update` command to clone the submodules
+- When you clone a repository that contains submodules, the submodules are not automatically cloned by default
+- You will need to use the `git submodule init` command followed by the `git submodule update` command to clone the submodules
 
-## Icon
+## ASSETS
 
 [Icon](https://iconarchive.com/artist/studiomx.html) by Maximilian Novikov
