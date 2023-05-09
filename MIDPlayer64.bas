@@ -6,7 +6,7 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$Include:'include/FileOperations.bi'
+'$Include:'include/FileOps.bi'
 '$Include:'include/MIDIPlayer.bi'
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@
 $ExeIcon:'./MIDPlayer64.ico'
 $VersionInfo:CompanyName=Samuel Gomes
 $VersionInfo:FileDescription=MIDI Player 64 executable
-$VersionInfo:InternalName=MIDIPlayer64'
+$VersionInfo:InternalName=MIDIPlayer64
 $VersionInfo:LegalCopyright=Copyright (c) 2023, Samuel Gomes
 $VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
 $VersionInfo:OriginalFilename=MIDPlayer64.exe
@@ -274,7 +274,7 @@ End Sub
 ' MODULE FILES
 '-----------------------------------------------------------------------------------------------------------------------
 '$Include:'include/MIDIPlayer.bas'
-'$Include:'include/FileOperations.bas'
+'$Include:'include/FileOps.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
 
