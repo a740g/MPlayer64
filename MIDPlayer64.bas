@@ -112,14 +112,14 @@ Sub DrawWeirdPlasma
     bottom = Height - 1
 
     t = t + 1
-    For x = 2 To right Step 5 ' start from 2 to make things look better
-        For y = 1 To bottom Step 4 ' start from 1 to make things look better
-            r = 64 + 128 * Sin(x / 16 - t / 20)
-            g = 64 + 128 * Sin(y / 16 - t / 22)
-            b = 64 + 128 * Sin((x + y) / 32 - t / 24)
-            r2 = 64 + 128 * Sin(y / 32 + t / 26)
-            g2 = 64 + 128 * Sin(x / 32 + t / 28)
-            b2 = 64 + 128 * Sin((x - y) / 32 + t / 30)
+    For x = 1 To right Step 7 ' start from 2 to make things look better
+        For y = 1 To bottom Step 7 ' start from 1 to make things look better
+            r = 96 + 128 * Sin(x / 16 - t / 20)
+            g = 96 + 128 * Sin(y / 16 - t / 22)
+            b = 96 + 128 * Sin((x + y) / 32 - t / 24)
+            r2 = 96 + 128 * Sin(y / 32 + t / 26)
+            g2 = 96 + 128 * Sin(x / 32 + t / 28)
+            b2 = 96 + 128 * Sin((x - y) / 32 + t / 30)
             PSet (x, y), RGB32((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2)
         Next
     Next
