@@ -54,7 +54,7 @@ Dim Shared useFMSynth As Byte: useFMSynth = FALSE
 Title APP_NAME + " " + OS$ ' Set the program name in the titlebar
 ChDir StartDir$ ' Change to the directory specifed by the environment
 AcceptFileDrop ' Enable drag and drop of files
-Screen NewImage(640, 480, 256) ' Use 640x480 resolution
+Screen NewImage(640, 480, 32) ' Use 640x480 resolution
 AllowFullScreen SquarePixels , Smooth ' All the user to press Alt+Enter to go fullscreen
 PrintMode KeepBackground
 Display ' Only swap display buffer when we want
@@ -120,7 +120,7 @@ Sub DrawWeirdPlasma
             r2 = 64 + 128 * Sin(y / 32 + t / 26)
             g2 = 64 + 128 * Sin(x / 32 + t / 28)
             b2 = 64 + 128 * Sin((x - y) / 32 + t / 30)
-            PSet (x, y), RGB((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2)
+            PSet (x, y), RGB32((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2)
         Next
     Next
 End Sub
@@ -134,10 +134,10 @@ Sub DrawInfoScreen
     Dim As Single lSamp, rSamp
     Dim As String minute, second
 
-    Cls , 0 ' clear the framebuffer to black color
+    Cls , Black ' clear the framebuffer to black color
     DrawWeirdPlasma
 
-    If MIDI_IsPaused Or Not MIDI_IsPlaying Then Color 12 Else Color 15
+    If MIDI_IsPaused Or Not MIDI_IsPlaying Then Color OrangeRed Else Color White
 
     Locate 22, 43: Print "Buffered sound:"; SndRawLen(__MIDI_Player.soundHandle) * 1000; "ms";
     Locate 23, 43: Print "        Voices:"; MIDI_GetActiveVoices;
@@ -149,7 +149,7 @@ Sub DrawInfoScreen
     second = Right$("00" + LTrim$(Str$(((MIDI_GetTotalTime + 500) \ 1000) Mod 60)), 2)
     Locate 26, 43: Print Using "    Total time: &:& (mm:ss)"; minute; second
 
-    Color 11
+    Color Cyan
     Locate 22, 7: Print "ESC - NEXT / QUIT"
     Locate 23, 7: Print "SPC - PLAY / PAUSE"
     Locate 24, 7: Print "=|+ - INCREASE VOLUME"
@@ -158,21 +158,21 @@ Sub DrawInfoScreen
 
     nsf = __MIDI_Player.soundBufferSize \ __MIDI_SOUND_BUFFER_FRAME_SIZE 'number of sample frames in the buffer
 
-    Color 15: PrintString (224, 32), "Left Channel (Wave plot)"
-    Color 10: PrintString (20, 32), "0 [ms]": PrintString (556, 32), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
-    View (20, 48)-(620, 144), 0, 7 ' set a viewport to draw to so that even if we draw outside it gets clipped
+    Color White: PrintString (224, 32), "Left Channel (Wave plot)"
+    Color Lime: PrintString (20, 32), "0 [ms]": PrintString (556, 32), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    View (20, 48)-(620, 144), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
     For x = 0 To nsf - 1
         lSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get left channel sample
-        Line (x * 601 \ nsf, 47)-Step(0, lSamp * 47), 10 ' plot wave
+        Line (x * 601 \ nsf, 47)-Step(0, lSamp * 47), Lime ' plot wave
     Next
     View
 
-    Color 15: PrintString (220, 160), "Right Channel (Wave plot)"
-    Color 10: PrintString (20, 160), "0 [ms]": PrintString (556, 160), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
-    View (20, 176)-(620, 272), 0, 7 ' set a viewport to draw to so that even if we draw outside it gets clipped
+    Color White: PrintString (220, 160), "Right Channel (Wave plot)"
+    Color Lime: PrintString (20, 160), "0 [ms]": PrintString (556, 160), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    View (20, 176)-(620, 272), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
     For x = 0 To nsf - 1
         rSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_SOUND_BUFFER_SAMPLE_SIZE + __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get right channel sample
-        Line (x * 601 \ nsf, 47)-Step(0, rSamp * 47), 10 ' plot wave
+        Line (x * 601 \ nsf, 47)-Step(0, rSamp * 47), Lime ' plot wave
     Next
     View
 
@@ -250,12 +250,12 @@ Function DoWelcomeScreen~%%
 
 
     Do
-        Cls , 0 ' clear the framebuffer to black color
+        Cls , Black ' clear the framebuffer to black color
 
         DrawWeirdPlasma ' XD
 
         Locate 1, 1
-        Color 12, 0
+        Color OrangeRed, 0
         If Timer Mod 7 = 0 Then
             Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (+_+)"
         ElseIf Timer Mod 13 = 0 Then
@@ -264,34 +264,34 @@ Function DoWelcomeScreen~%%
             Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ù_ù)"
         End If
         Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
-        Color 15
+        Color White
         Print "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-.        "
         Print "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |          "
-        Color 10
+        Color Lime
         Print "_._______`-' ` `-'   `-'     '   '   ' ' `-'  '   '    ' `-` `-| `-' '________._"
         Print " |                                                           `-'              | "
         Print " |                                                                            | "
         Print " |                                                                            | "
-        Color 14
-        Print " |                     ";: Color 11: Print "F1";: Color 7: Print " ............ ";: Color 13: Print "MULTI-SELECT FILES";: Color 14: Print "                     | "
+        Color Yellow
+        Print " |                     ";: Color Cyan: Print "F1";: Color Gray: Print " ............ ";: Color Magenta: Print "MULTI-SELECT FILES";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "ESC";: Color 7: Print " .................... ";: Color 13: Print "NEXT/QUIT";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "ESC";: Color Gray: Print " .................... ";: Color Magenta: Print "NEXT/QUIT";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "SPC";: Color 7: Print " ........................ ";: Color 13: Print "PAUSE";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "SPC";: Color Gray: Print " ........................ ";: Color Magenta: Print "PAUSE";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "=|+";: Color 7: Print " .............. ";: Color 13: Print "INCREASE VOLUME";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "=|+";: Color Gray: Print " .............. ";: Color Magenta: Print "INCREASE VOLUME";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "-|_";: Color 7: Print " .............. ";: Color 13: Print "DECREASE VOLUME";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "-|_";: Color Gray: Print " .............. ";: Color Magenta: Print "DECREASE VOLUME";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "L|l";: Color 7: Print " ......................... ";: Color 13: Print "LOOP";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "L|l";: Color Gray: Print " ......................... ";: Color Magenta: Print "LOOP";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
-        Print " |                     ";: Color 11: Print "F|f";: Color 7: Print " ............. ";: Color 13: Print "FM SYNTHESIS ["; Chr$(78 + (-useFMSynth * 11)); "]";: Color 14: Print "                     | "
+        Print " |                     ";: Color Cyan: Print "F|f";: Color Gray: Print " ............. ";: Color Magenta: Print "FM SYNTHESIS ["; Chr$(78 + (-useFMSynth * 11)); "]";: Color Yellow: Print "                     | "
         Print " |                                                                            | "
         Print " |                                                                            | "
-        Print " |   ";: Color 15: Print "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: Color 14: Print "   | "
-        Print " | ";: Color 15: Print "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: Color 14: Print "  | "
-        Print " |    ";: Color 15: Print "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: Color 14: Print "    | "
-        Print " |                 ";: Color 15: Print "https://github.com/a740g/QB64-MIDI-Player";: Color 14: Print "                  | "
+        Print " |   ";: Color White: Print "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: Color Yellow: Print "   | "
+        Print " | ";: Color White: Print "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: Color Yellow: Print "  | "
+        Print " |    ";: Color White: Print "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: Color Yellow: Print "    | "
+        Print " |                 ";: Color White: Print "https://github.com/a740g/QB64-MIDI-Player";: Color Yellow: Print "                  | "
         Print "_|_                                                                          _|_"
         Print " `/__________________________________________________________________________\' ";
 
