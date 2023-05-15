@@ -1,6 +1,6 @@
 # MIDI PLAYER 64
 
-This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) compatible MIDI player library based on [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser) C single-header libraries.
+This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player and library based on [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser) C single-header libraries.
 
 ![Screenshot](screenshots/Screenshot1.png)
 ![Screenshot](screenshots/Screenshot2.png)
@@ -11,6 +11,7 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) compatible M
 - Cross-platform (works on Windows, Linux & macOS)
 - Everything is statically linked (no shared library dependency)
 - Demo player that shows how to use the library
+- Experimental FM Synthesis
 
 ## API
 
@@ -33,7 +34,7 @@ Function MIDI_GetVolume!
 Function MIDI_GetTotalTime#
 Function MIDI_GetCurrentTime#
 Function MIDI_GetActiveVoices~&
-Sub MIDI_UpdatePlayer
+Sub MIDI_UpdatePlayer (bufferTime As Single)
 ```
 
 ## NOTES
@@ -41,7 +42,7 @@ Sub MIDI_UpdatePlayer
 - This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
 - Mixing this with QB64-PE's [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT) will not work
 - When you clone a repository that contains submodules, the submodules are not automatically cloned by default
-- You will need to use the `git submodule init` command followed by the `git submodule update` command to clone the submodules
+- You will need to use the `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
 
 ## ASSETS
 

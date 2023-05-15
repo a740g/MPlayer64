@@ -368,7 +368,7 @@ Function ProcessSelectedFiles~%%
     Dim ofdList As String
     Dim e As Unsigned Byte: e = EVENT_NONE
 
-    ofdList = OpenFileDialog$(APP_NAME, "", "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
+    ofdList = OpenFileDialog$(APP_NAME, , "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
 
     If ofdList = NULLSTRING Then Exit Function
 
