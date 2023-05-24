@@ -13,26 +13,25 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------------------------
-$ExeIcon:'./MIDPlayer64.ico'
+$ExeIcon:'./MIDIPlayer64.ico'
 $VersionInfo:CompanyName=Samuel Gomes
 $VersionInfo:FileDescription=MIDI Player 64 executable
 $VersionInfo:InternalName=MIDIPlayer64
 $VersionInfo:LegalCopyright=Copyright (c) 2023, Samuel Gomes
 $VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
-$VersionInfo:OriginalFilename=MIDPlayer64.exe
+$VersionInfo:OriginalFilename=MIDIPlayer64.exe
 $VersionInfo:ProductName=MIDI Player 64
 $VersionInfo:Web=https://github.com/a740g
 $VersionInfo:Comments=https://github.com/a740g
-$VersionInfo:FILEVERSION#=2,0,2,0
-$VersionInfo:PRODUCTVERSION#=2,0,2,0
+$VersionInfo:FILEVERSION#=2,0,3,0
+$VersionInfo:PRODUCTVERSION#=2,0,3,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------------------------
 Const APP_NAME = "MIDI Player 64"
-Const AUDIO_BUFFER_TIME = 0.2
-Const FRAME_RATE_MAX = 120
+Const FRAME_RATE_MAX = 60
 ' Program events
 Const EVENT_NONE = 0 ' idle
 Const EVENT_QUIT = 1 ' user wants to quit
@@ -104,25 +103,29 @@ End Sub
 
 
 ' Weird plasma effect
+' This is slow AF. We should probably use a Sine LUT
 Sub DrawWeirdPlasma
-    Dim As Long x, y, r, g, b, r2, g2, b2, right, bottom
+    Dim As Long x, y, r, g, b, r2, g2, b2, right, bottom, xs, ys
     Static t As Long
 
     right = Width - 1
     bottom = Height - 1
 
-    t = t + 1
-    For x = 1 To right Step 7 ' start from 2 to make things look better
-        For y = 1 To bottom Step 7 ' start from 1 to make things look better
+    For y = 0 To bottom Step 7
+        For x = xs To right Step 7
             r = 96 + 128 * Sin(x / 16 - t / 20)
             g = 96 + 128 * Sin(y / 16 - t / 22)
             b = 96 + 128 * Sin((x + y) / 32 - t / 24)
             r2 = 96 + 128 * Sin(y / 32 + t / 26)
             g2 = 96 + 128 * Sin(x / 32 + t / 28)
             b2 = 96 + 128 * Sin((x - y) / 32 + t / 30)
-            PSet (x, y), RGB32((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2)
+            PSet (x, ys + y), RGB32((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2)
+            ys = 1 - ys
         Next
+        xs = 1 - xs
     Next
+
+    t = t + 1
 End Sub
 
 
@@ -130,7 +133,7 @@ End Sub
 Sub DrawInfoScreen
     Shared __MIDI_Player As __MIDI_PlayerType
 
-    Dim As Unsigned Long nsf, x
+    Dim As Unsigned Long x
     Dim As Single lSamp, rSamp
     Dim As String minute, second
 
@@ -139,7 +142,7 @@ Sub DrawInfoScreen
 
     If MIDI_IsPaused Or Not MIDI_IsPlaying Then Color OrangeRed Else Color White
 
-    Locate 22, 43: Print "Buffered sound:"; SndRawLen(__MIDI_Player.soundHandle) * 1000; "ms";
+    Locate 22, 43: Print "Buffered sound:"; Fix(SndRawLen(__MIDI_Player.soundHandle) * 1000); "ms ";
     Locate 23, 43: Print "        Voices:"; MIDI_GetActiveVoices;
     Locate 24, 43: Print Using "Current volume: ###%"; MIDI_GetVolume * 100;
     minute = Right$("00" + LTrim$(Str$((MIDI_GetCurrentTime + 500) \ 60000)), 2)
@@ -156,23 +159,21 @@ Sub DrawInfoScreen
     Locate 25, 7: Print "-|_ - DECREASE VOLUME"
     Locate 26, 7: Print "L|l - LOOP"
 
-    nsf = __MIDI_Player.soundBufferSize \ __MIDI_SOUND_BUFFER_FRAME_SIZE 'number of sample frames in the buffer
-
     Color White: PrintString (224, 32), "Left Channel (Wave plot)"
-    Color Lime: PrintString (20, 32), "0 [ms]": PrintString (556, 32), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    Color Lime: PrintString (20, 32), "0 [ms]": PrintString (556, 32), Left$(Str$((__MIDI_Player.soundBufferFrames * 1000) \ SndRate), 6) + " [ms]"
     View (20, 48)-(620, 144), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
-    For x = 0 To nsf - 1
+    For x = 0 To __MIDI_Player.soundBufferFrames - 1
         lSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get left channel sample
-        Line (x * 601 \ nsf, 47)-Step(0, lSamp * 47), Lime ' plot wave
+        Line (x * 601 \ __MIDI_Player.soundBufferFrames, 47)-Step(0, lSamp * 47), Lime ' plot wave
     Next
     View
 
     Color White: PrintString (220, 160), "Right Channel (Wave plot)"
-    Color Lime: PrintString (20, 160), "0 [ms]": PrintString (556, 160), Left$(Str$(nsf * 1000 \ SndRate), 6) + " [ms]"
+    Color Lime: PrintString (20, 160), "0 [ms]": PrintString (556, 160), Left$(Str$((__MIDI_Player.soundBufferFrames * 1000) \ SndRate), 6) + " [ms]"
     View (20, 176)-(620, 272), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
-    For x = 0 To nsf - 1
+    For x = 0 To __MIDI_Player.soundBufferFrames - 1
         rSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_SOUND_BUFFER_SAMPLE_SIZE + __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get right channel sample
-        Line (x * 601 \ nsf, 47)-Step(0, rSamp * 47), Lime ' plot wave
+        Line (x * 601 \ __MIDI_Player.soundBufferFrames, 47)-Step(0, rSamp * 47), Lime ' plot wave
     Next
     View
 
@@ -193,19 +194,19 @@ Function PlayMIDITune~%% (fileName As String)
     ' Set the app title to display the file name
     Title APP_NAME + " - " + GetFileNameFromPathOrURL(fileName)
 
-    MIDI_StartPlayer
+    MIDI_Play
 
     Dim k As Long
 
     Do
-        MIDI_UpdatePlayer AUDIO_BUFFER_TIME
+        MIDI_Update MIDI_SOUND_BUFFER_TIME_DEFAULT
         DrawInfoScreen
 
         k = KeyHit
 
         Select Case k
             Case KEY_SPACE_BAR
-                MIDI_SetPause Not MIDI_IsPaused
+                MIDI_Pause Not MIDI_IsPaused
 
             Case KEY_PLUS, KEY_EQUALS ' + = volume up
                 MIDI_SetVolume MIDI_GetVolume + 0.01
@@ -216,7 +217,7 @@ Function PlayMIDITune~%% (fileName As String)
                 If MIDI_GetVolume < MIDI_VOLUME_MIN Then MIDI_SetVolume MIDI_VOLUME_MIN
 
             Case KEY_UPPER_L, KEY_LOWER_L
-                MIDI_SetLooping Not MIDI_IsLooping
+                MIDI_Loop Not MIDI_IsLooping
 
             Case KEY_F1
                 PlayMIDITune = EVENT_LOAD
@@ -237,7 +238,7 @@ Function PlayMIDITune~%% (fileName As String)
         Limit FRAME_RATE_MAX
     Loop Until Not MIDI_IsPlaying Or k = KEY_ESCAPE
 
-    MIDI_StopPlayer
+    MIDI_Stop
 
     Title APP_NAME + " " + OS$ ' Set app title to the way it was
 End Function

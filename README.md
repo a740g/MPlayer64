@@ -24,25 +24,26 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player 
 ## API
 
 ```VB
-Function MIDI_Initialize& (useFM As Byte)
-Function MIDI_IsInitialized&
+Function MIDI_Initialize%% (useOPL3 As Byte)
+Function MIDI_IsInitialized%%
 Sub MIDI_Finalize
 Function MIDI_LoadTuneFromFile%% (fileName As String)
 Function MIDI_LoadTuneFromMemory%% (buffer As String)
-Function MIDI_IsTuneLoaded&
-Sub MIDI_StartPlayer
-Sub MIDI_StopPlayer
-Function MIDI_IsPlaying&
-Sub MIDI_SetLooping (ByVal isLooping As Long)
-Function MIDI_IsLooping&
-Sub MIDI_SetPause (isPaused As Byte)
+Function MIDI_IsTuneLoaded%%
+Sub MIDI_Play
+Sub MIDI_Stop
+Function MIDI_IsPlaying%%
+Sub MIDI_Loop (ByVal isLooping As Byte)
+Function MIDI_IsLooping%%
+Sub MIDI_Pause (state As Byte)
 Function MIDI_IsPaused%%
-Sub MIDI_SetVolume (ByVal volume As Single)
 Function MIDI_GetVolume!
+Sub MIDI_SetVolume (ByVal volume As Single)
 Function MIDI_GetTotalTime#
 Function MIDI_GetCurrentTime#
 Function MIDI_GetActiveVoices~&
-Sub MIDI_UpdatePlayer (bufferTime As Single)
+Function MIDI_IsFMSynthesis%%
+Sub MIDI_Update (bufferTime As Single)
 ```
 
 ## NOTES
