@@ -13,6 +13,9 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------------------------
+$NoPrefix
+$Resize:Smooth
+$Color:32
 $ExeIcon:'./MIDIPlayer64.ico'
 $VersionInfo:CompanyName=Samuel Gomes
 $VersionInfo:FileDescription=MIDI Player 64 executable
@@ -376,7 +379,7 @@ Function ProcessSelectedFiles~%%
     ReDim fileNames(0 To 0) As String
     Dim As Long i, j
 
-    j = ParseOpenFileDialogList(ofdList, fileNames())
+    j = TokenizeString(ofdList, "|", NULLSTRING, FALSE, fileNames())
 
     For i = 0 To j - 1
         e = PlayMIDITune(fileNames(i))
@@ -392,6 +395,7 @@ End Function
 '-----------------------------------------------------------------------------------------------------------------------
 '$Include:'include/ProgramArgs.bas'
 '$Include:'include/FileOps.bas'
+'$Include:'include/StringOps.bas'
 '$Include:'include/MIDIPlayer.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
