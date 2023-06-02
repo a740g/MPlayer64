@@ -116,12 +116,12 @@ Sub DrawWeirdPlasma
 
     For y = 0 To bottom Step 7
         For x = xs To right Step 7
-            r = 128 + 128 * Sin(x / 16 - t / 20)
-            g = 128 + 128 * Sin(y / 16 - t / 22)
-            b = 128 + 128 * Sin((x + y) / 32 - t / 24)
-            r2 = 128 + 128 * Sin(y / 32 + t / 26)
-            g2 = 128 + 128 * Sin(x / 32 + t / 28)
-            b2 = 128 + 128 * Sin((x - y) / 32 + t / 30)
+            r = 128 + 127 * Sin(x / 16 - t / 20)
+            g = 128 + 127 * Sin(y / 16 - t / 22)
+            b = 128 + 127 * Sin((x + y) / 32 - t / 24)
+            r2 = 128 + 127 * Sin(y / 32 + t / 26)
+            g2 = 128 + 127 * Sin(x / 32 + t / 28)
+            b2 = 128 + 127 * Sin((x - y) / 32 + t / 30)
             PSet (x, ys + y), ToBGRA((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2, 255)
             ys = 1 - ys
         Next
