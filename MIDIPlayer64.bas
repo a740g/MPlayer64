@@ -6,87 +6,121 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$Include:'include/FileOps.bi'
-'$Include:'include/MIDIPlayer.bi'
+'$INCLUDE:'include/Colors.bi'
+'$INCLUDE:'include/FileOps.bi'
+'$INCLUDE:'include/AnalyzerFFT.bi'
+'$INCLUDE:'include/MIDIPlayer.bi'
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------------------------
-$NoPrefix
-$Resize:Smooth
-$Color:32
-$ExeIcon:'./MIDIPlayer64.ico'
-$VersionInfo:CompanyName=Samuel Gomes
-$VersionInfo:FileDescription=MIDI Player 64 executable
-$VersionInfo:InternalName=MIDIPlayer64
-$VersionInfo:LegalCopyright=Copyright (c) 2023, Samuel Gomes
-$VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
-$VersionInfo:OriginalFilename=MIDIPlayer64.exe
-$VersionInfo:ProductName=MIDI Player 64
-$VersionInfo:Web=https://github.com/a740g
-$VersionInfo:Comments=https://github.com/a740g
-$VersionInfo:FILEVERSION#=2,0,3,0
-$VersionInfo:PRODUCTVERSION#=2,0,3,0
+$NOPREFIX
+$RESIZE:SMOOTH
+$EXEICON:'./MIDIPlayer64.ico'
+$VERSIONINFO:CompanyName=Samuel Gomes
+$VERSIONINFO:FileDescription=MIDI Player 64 executable
+$VERSIONINFO:InternalName=MIDIPlayer64
+$VERSIONINFO:LegalCopyright=Copyright (c) 2023, Samuel Gomes
+$VERSIONINFO:LegalTrademarks=All trademarks are property of their respective owners
+$VERSIONINFO:OriginalFilename=MIDIPlayer64.exe
+$VERSIONINFO:ProductName=MIDI Player 64
+$VERSIONINFO:Web=https://github.com/a740g
+$VERSIONINFO:Comments=https://github.com/a740g
+$VERSIONINFO:FILEVERSION#=2,1,0,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------------------------
-Const APP_NAME = "MIDI Player 64"
-Const FRAME_RATE_MAX = 60
+CONST APP_NAME = "MIDI Player 64"
+CONST FRAME_RATE_MAX = 120
 ' Program events
-Const EVENT_NONE = 0 ' idle
-Const EVENT_QUIT = 1 ' user wants to quit
-Const EVENT_CMDS = 2 ' process command line
-Const EVENT_LOAD = 3 ' user want to load files
-Const EVENT_DROP = 4 ' user dropped files
-Const EVENT_PLAY = 5 ' play next song
+CONST EVENT_NONE = 0 ' idle
+CONST EVENT_QUIT = 1 ' user wants to quit
+CONST EVENT_CMDS = 2 ' process command line
+CONST EVENT_LOAD = 3 ' user want to load files
+CONST EVENT_DROP = 4 ' user dropped files
+CONST EVENT_PLAY = 5 ' play next song
+CONST EVENT_HTTP = 6 ' user wants to downloads and play random tunes from www.vgmusic.com
+' Background constants
+CONST STAR_COUNT = 512 ' the maximum stars that we can show
+CONST CIRCLE_WAVE_COUNT = 32
+'-----------------------------------------------------------------------------------------------------------------------
+
+'-----------------------------------------------------------------------------------------------------------------------
+' USER DEFINED TYPES
+'-----------------------------------------------------------------------------------------------------------------------
+TYPE StarType
+    p AS Vector3FType ' position
+    c AS UNSIGNED LONG ' color
+END TYPE
+
+TYPE CircleWaveType
+    p AS Vector2FType ' position
+    v AS Vector2FType ' velocity
+    r AS SINGLE ' radius
+    c AS BGRType ' color
+    a AS SINGLE ' alpha (0.0 - 1.0)
+    s AS SINGLE ' fade speed
+END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' GLOBAL VARIABLES
 '-----------------------------------------------------------------------------------------------------------------------
-Dim Shared useFMSynth As Byte: useFMSynth = FALSE
+DIM SHARED useFMSynth AS BYTE
+DIM SHARED AS LONG AnalyzerType, BackGroundType
+REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerLeft(0 TO 0), SpectrumAnalyzerRight(0 TO 0)
+DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
+DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT
 '-----------------------------------------------------------------------------------------------------------------------
-Title APP_NAME + " " + OS$ ' Set the program name in the titlebar
-ChDir StartDir$ ' Change to the directory specifed by the environment
-AcceptFileDrop ' Enable drag and drop of files
-Screen NewImage(640, 480, 32) ' Use 640x480 resolution
-AllowFullScreen SquarePixels , Smooth ' All the user to press Alt+Enter to go fullscreen
-PrintMode KeepBackground
-Display ' Only swap display buffer when we want
-RebootMIDILibrary ' kickstart the MIDI Player library with default settings
+TITLE APP_NAME + " " + OS$ ' set the program name in the titlebar
+CHDIR STARTDIR$ ' change to the directory specifed by the environment
+ACCEPTFILEDROP ' enable drag and drop of files
+SCREEN NEWIMAGE(640, 480, 32) ' use 640x480 resolution
+ALLOWFULLSCREEN SQUAREPIXELS , SMOOTH ' allow the user to press Alt+Enter to go fullscreen
+PRINTMODE KEEPBACKGROUND ' print without wiping out the background
+srand TIMER ' seed RNG
+DISPLAY ' only swap display buffer when we want
+AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
+BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
+InitializeStars Stars()
+InitializeCircleWaves CircleWaves()
 
-Dim event As Unsigned Byte: event = EVENT_CMDS ' default to command line event first
+DIM event AS BYTE: event = EVENT_CMDS ' default to command line event first
 
 ' Main loop
-Do
-    Select Case event
-        Case EVENT_QUIT
-            Exit Do
+DO
+    SELECT CASE event
+        CASE EVENT_QUIT
+            EXIT DO
 
-        Case EVENT_DROP
-            event = ProcessDroppedFiles
+        CASE EVENT_DROP
+            event = OnDroppedFiles
 
-        Case EVENT_LOAD
-            event = ProcessSelectedFiles
+        CASE EVENT_LOAD
+            event = OnSelectedFiles
 
-        Case EVENT_CMDS
-            event = ProcessCommandLine
+        CASE EVENT_CMDS
+            event = OnCommandLine
 
-        Case Else
-            event = DoWelcomeScreen
-    End Select
-Loop Until event = EVENT_QUIT
+        CASE EVENT_HTTP
+            event = OnVGMArchiveFiles
 
-AutoDisplay
+        CASE ELSE
+            event = OnWelcomeScreen
+    END SELECT
+LOOP UNTIL event = EVENT_QUIT
+
+AUTODISPLAY
 MIDI_Finalize
-System
+SYSTEM
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -94,239 +128,332 @@ System
 '-----------------------------------------------------------------------------------------------------------------------
 ' This closes and re-initialized the library
 ' This is needed if we want to toggle between FM & Sample synth
-Sub RebootMIDILibrary
+SUB RebootMIDILibrary
     MIDI_Finalize ' close the MIDI library if it was opened before
 
     ' (Re-)Initialize the MIDI Player library
-    If Not MIDI_Initialize(useFMSynth) Then
-        MessageBox APP_NAME, "Failed to initialize MIDI Player library!", "error"
-        System 1
-    End If
-End Sub
-
-
-' Weird plasma effect
-' This is slow AF. We should probably use a Sine LUT
-Sub DrawWeirdPlasma
-    Dim As Long x, y, r, g, b, r2, g2, b2, right, bottom, xs, ys
-    Static t As Long
-
-    right = Width - 1
-    bottom = Height - 1
-
-    For y = 0 To bottom Step 7
-        For x = xs To right Step 7
-            r = 128 + 127 * Sin(x / 16 - t / 20)
-            g = 128 + 127 * Sin(y / 16 - t / 22)
-            b = 128 + 127 * Sin((x + y) / 32 - t / 24)
-            r2 = 128 + 127 * Sin(y / 32 + t / 26)
-            g2 = 128 + 127 * Sin(x / 32 + t / 28)
-            b2 = 128 + 127 * Sin((x - y) / 32 + t / 30)
-            PSet (x, ys + y), ToBGRA((r + r2) \ 2, (g + g2) \ 2, (b + b2) \ 2, 255)
-            ys = 1 - ys
-        Next
-        xs = 1 - xs
-    Next
-
-    t = t + 1
-End Sub
+    IF NOT MIDI_Initialize(useFMSynth) THEN
+        MESSAGEBOX APP_NAME, "Failed to initialize MIDI Player library!", "error"
+        SYSTEM 1
+    END IF
+END SUB
 
 
 ' Draws the screen during playback
-Sub DrawInfoScreen
-    Shared __MIDI_Player As __MIDI_PlayerType
+SUB DrawVisualization
+    SHARED __MIDI_Player AS __MIDI_PlayerType
 
-    Dim As Unsigned Long x
-    Dim As Single lSamp, rSamp
-    Dim As String minute, second
+    DIM AS SINGLE lSamp, rSamp, power
 
-    Cls , Black ' clear the framebuffer to black color
-    DrawWeirdPlasma
+    ' Get the sound buffer peak/power
+    DIM upperBound AS LONG: upperBound = __MIDI_Player.soundBufferBytes - __MIDI_SOUND_BUFFER_SAMPLE_SIZE
 
-    If MIDI_IsPaused Or Not MIDI_IsPlaying Then Color OrangeRed Else Color White
+    DIM i AS LONG: FOR i = 0 TO upperBound STEP __MIDI_SOUND_BUFFER_FRAME_SIZE
+        lSamp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i, SINGLE)
+        rSamp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i + __MIDI_SOUND_BUFFER_SAMPLE_SIZE, SINGLE)
+        power = power + lSamp * lSamp + rSamp * rSamp ' we'll use this to calculate the sound power right after the loop
+    NEXT
 
-    Locate 22, 43: Print "Buffered sound:"; Fix(SndRawLen(__MIDI_Player.soundHandle) * 1000); "ms ";
-    Locate 23, 43: Print "        Voices:"; MIDI_GetActiveVoices;
-    Locate 24, 43: Print Using "Current volume: ###%"; MIDI_GetVolume * 100;
-    minute = Right$("00" + LTrim$(Str$((MIDI_GetCurrentTime + 500) \ 60000)), 2)
-    second = Right$("00" + LTrim$(Str$(((MIDI_GetCurrentTime + 500) \ 1000) Mod 60)), 2)
-    Locate 25, 43: Print Using "  Elapsed time: &:& (mm:ss)"; minute; second
-    minute = Right$("00" + LTrim$(Str$((MIDI_GetTotalTime + 500) \ 60000)), 2)
-    second = Right$("00" + LTrim$(Str$(((MIDI_GetTotalTime + 500) \ 1000) Mod 60)), 2)
-    Locate 26, 43: Print Using "    Total time: &:& (mm:ss)"; minute; second
+    power = power / (__MIDI_Player.soundBufferFrames * 2) ' because each frame has 2 samples (L & R)
 
-    Color Cyan
-    Locate 22, 7: Print "ESC - NEXT / QUIT"
-    Locate 23, 7: Print "SPC - PLAY / PAUSE"
-    Locate 24, 7: Print "=|+ - INCREASE VOLUME"
-    Locate 25, 7: Print "-|_ - DECREASE VOLUME"
-    Locate 26, 7: Print "L|l - LOOP"
+    CLS , BGRA_BLACK ' clear the framebuffer to black color
 
-    Color White: PrintString (224, 32), "Left Channel (Wave plot)"
-    Color Lime: PrintString (20, 32), "0 [ms]": PrintString (556, 32), Left$(Str$((__MIDI_Player.soundBufferFrames * 1000) \ SndRate), 6) + " [ms]"
-    View (20, 48)-(620, 144), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
-    For x = 0 To __MIDI_Player.soundBufferFrames - 1
-        lSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get left channel sample
-        Line (x * 601 \ __MIDI_Player.soundBufferFrames, 47)-Step(0, lSamp * 47), Lime ' plot wave
-    Next
-    View
+    ' Draw the background
+    SELECT CASE BackGroundType
+        CASE 1
+            ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
+            UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - power)
+        CASE 2
+            UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
+    END SELECT
 
-    Color White: PrintString (220, 160), "Right Channel (Wave plot)"
-    Color Lime: PrintString (20, 160), "0 [ms]": PrintString (556, 160), Left$(Str$((__MIDI_Player.soundBufferFrames * 1000) \ SndRate), 6) + " [ms]"
-    View (20, 176)-(620, 272), Black, Gray ' set a viewport to draw to so that even if we draw outside it gets clipped
-    For x = 0 To __MIDI_Player.soundBufferFrames - 1
-        rSamp = MemGet(__MIDI_Player.soundBuffer, __MIDI_SOUND_BUFFER_SAMPLE_SIZE + __MIDI_Player.soundBuffer.OFFSET + x * __MIDI_SOUND_BUFFER_FRAME_SIZE, Single) ' get right channel sample
-        Line (x * 601 \ __MIDI_Player.soundBufferFrames, 47)-Step(0, rSamp * 47), Lime ' plot wave
-    Next
-    View
+    IF MIDI_IsPaused OR NOT MIDI_IsPlaying THEN COLOR BGRA_ORANGERED ELSE COLOR BGRA_WHITE
 
-    Display
-End Sub
+    ' Draw the tune info
+    DIM AS STRING * 2 minute, second
+
+    LOCATE 21, 49: PRINT "Buffered sound:"; FIX(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000); "ms ";
+    LOCATE 22, 57: PRINT "Voices:"; MIDI_GetActiveVoices;
+    LOCATE 23, 49: PRINT USING "Current volume: ###%"; MIDI_GetVolume * 100;
+    minute = RIGHT$("00" + LTRIM$(STR$((MIDI_GetCurrentTime + 500) \ 60000)), 2)
+    second = RIGHT$("00" + LTRIM$(STR$(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60)), 2)
+    LOCATE 24, 51: PRINT USING "Elapsed time: &:& (mm:ss)"; minute; second
+    minute = RIGHT$("00" + LTRIM$(STR$((MIDI_GetTotalTime + 500) \ 60000)), 2)
+    second = RIGHT$("00" + LTRIM$(STR$(((MIDI_GetTotalTime + 500) \ 1000) MOD 60)), 2)
+    LOCATE 25, 53: PRINT USING "Total time: &:& (mm:ss)"; minute; second
+    LOCATE 26, 56: PRINT "Looping: "; BoolToStr(MIDI_IsLooping, 2); " ";
+
+    COLOR BGRA_CYAN
+
+    LOCATE 20, 5: PRINT "F1 - MULTI-SELECT FILES";
+    LOCATE 21, 5: PRINT "F6 - QUICKSAVE FILE";
+    LOCATE 22, 4: PRINT "O|o - TOGGLE ANALYZER TYPE";
+    LOCATE 23, 4: PRINT "B/b - TOGGLE BACKGROUND TYPE";
+    LOCATE 24, 4: PRINT "ESC - NEXT / QUIT";
+    LOCATE 25, 4: PRINT "SPC - PLAY / PAUSE";
+    LOCATE 26, 4: PRINT "=|+ - INCREASE VOLUME";
+    LOCATE 27, 4: PRINT "-|_ - DECREASE VOLUME";
+    LOCATE 28, 4: PRINT "L|l - LOOP";
+
+    DIM text AS STRING
+    DIM AS LONG xp, yp
+    DIM AS UNSIGNED LONG c
+
+    ON AnalyzerType GOSUB DrawOscillators, DrawFFT
+
+    ' Draw the boxes around the analyzer viewport
+    LINE (20, 48)-(620, 144), BGRA_WHITE, B
+    LINE (20, 176)-(620, 272), BGRA_WHITE, B
+
+    DISPLAY ' flip the frambuffer
+
+    EXIT SUB
+
+    '-------------------------------------------------------------------------------------------------------------------
+    DrawOscillators: ' animate waveform oscillators
+    '-------------------------------------------------------------------------------------------------------------------
+    COLOR BGRA_WHITE
+    LOCATE 3, 29: PRINT "Left channel (wave plot)";
+    LOCATE 11, 29: PRINT "Right channel (wave plot)"
+    COLOR BGRA_LIME
+    LOCATE 3, 3: PRINT "0 [ms]";
+    LOCATE 11, 3: PRINT "0 [ms]";
+    text = STR$((__MIDI_Player.soundBufferFrames * 1000~&) \ SNDRATE) + " [ms]"
+    i = 79 - LEN(text)
+    LOCATE 3, i: PRINT text;
+    LOCATE 11, i: PRINT text;
+
+    upperBound = __MIDI_Player.soundBufferFrames - 1
+
+    FOR i = 0 TO upperBound
+        xp = 21 + (i * 598) \ upperBound ' 21 = x_start, 598 = oscillator_width
+
+        yp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i * __MIDI_SOUND_BUFFER_FRAME_SIZE, SINGLE) * 47
+        c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
+        IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 96 ELSE yp = yp + 96 ' 96 = y_start, 47 = oscillator_height
+        LINE (xp, 96)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
+
+        yp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_SOUND_BUFFER_SAMPLE_SIZE + __MIDI_Player.soundBuffer.OFFSET + i * __MIDI_SOUND_BUFFER_FRAME_SIZE, SINGLE) * 47
+        c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
+        IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
+        LINE (xp, 224)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
+    NEXT
+
+    RETURN
+    '-------------------------------------------------------------------------------------------------------------------
+
+    '-------------------------------------------------------------------------------------------------------------------
+    DrawFFT: ' animate FFT frequency oscillators
+    '-------------------------------------------------------------------------------------------------------------------
+    COLOR BGRA_WHITE
+    LOCATE 3, 23: PRINT "Left channel (frequency spectrum)";
+    LOCATE 11, 23: PRINT "Right channel (frequency spectrum)";
+    COLOR BGRA_LIME
+    text = STR$(SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
+    LOCATE 3, 2: PRINT text;
+    LOCATE 11, 2: PRINT text;
+    text = STR$(__MIDI_Player.soundBufferFrames * SNDRATE \ SHL(__MIDI_Player.soundBufferFrames, 2)) + " [Hz]"
+    i = 79 - LEN(text)
+    LOCATE 3, i: PRINT text;
+    LOCATE 11, i: PRINT text;
+
+    DIM fftBits AS LONG: fftBits = LeftShiftOneCount(__MIDI_Player.soundBufferFrames) ' get the count of bits that the FFT routine will need
+
+    ' Do RFFT for both left and right channel
+    AnalyzerFFTSingle OFFSET(SpectrumAnalyzerLeft(0)), __MIDI_Player.soundBuffer.OFFSET, 2, fftBits ' the left samples first
+    AnalyzerFFTSingle OFFSET(SpectrumAnalyzerRight(0)), __MIDI_Player.soundBuffer.OFFSET + __MIDI_SOUND_BUFFER_SAMPLE_SIZE, 2, fftBits ' and now the right ones
+
+    upperBound = __MIDI_Player.soundBufferFrames \ 2 - 1
+
+    FOR i = 0 TO upperBound
+        xp = 21 + (i * 596) \ upperBound ' 21 = x_start, 598 = oscillator_width
+
+        ' Draw the left one first
+        yp = SHR(SpectrumAnalyzerLeft(i), 5)
+        IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
+        c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
+        LINE (xp, 143)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
+
+        ' Then the right one
+        yp = SHR(SpectrumAnalyzerRight(i), 5)
+        IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
+        c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
+        LINE (xp, 271)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
+    NEXT
+
+    RETURN
+    '-------------------------------------------------------------------------------------------------------------------
+END SUB
 
 
 ' Initializes, loads and plays a MIDI file
 ' Also checks for input, shows info etc
-Function PlayMIDITune~%% (fileName As String)
-    PlayMIDITune = EVENT_PLAY ' default event is to play next song
+FUNCTION OnPlayMIDITune%% (fileName AS STRING)
+    SHARED __MIDI_Player AS __MIDI_PlayerType ' we are using this only to access the library internals to draw the analyzer
 
-    If Not MIDI_LoadTuneFromMemory(LoadFile(fileName)) Then
-        MessageBox APP_NAME, "Failed to load: " + fileName, "error"
-        Exit Function
-    End If
+    ' NOTE: we need to do this before playback else some TSF MIDI playback sounds like crap
+    ' TODO: I'll need to investigate the C side of things to find a proper solution
+    RebootMIDILibrary
+
+    OnPlayMIDITune = EVENT_PLAY ' default event is to play next song
+
+    DIM buffer AS STRING: buffer = LoadFile(fileName) ' load the whole file to memory
+
+    IF NOT MIDI_LoadTuneFromMemory(buffer) THEN
+        MESSAGEBOX APP_NAME, "Failed to load: " + fileName, "error"
+        EXIT FUNCTION
+    END IF
+
+    ' Setup the FFT arrays
+    REDIM AS UNSIGNED INTEGER SpectrumAnalyzerLeft(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerRight(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
-    Title APP_NAME + " - " + GetFileNameFromPathOrURL(fileName)
+    TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
 
     MIDI_Play
 
-    Dim k As Long
+    DIM k AS LONG
 
-    Do
+    DO
         MIDI_Update MIDI_SOUND_BUFFER_TIME_DEFAULT
-        DrawInfoScreen
 
-        k = KeyHit
+        DrawVisualization '  clears the screen and then draws all the fun stuff
 
-        Select Case k
-            Case KEY_SPACE_BAR
-                MIDI_Pause Not MIDI_IsPaused
+        k = KEYHIT
 
-            Case KEY_PLUS, KEY_EQUALS ' + = volume up
+        SELECT CASE k
+            CASE KEY_SPACE
+                MIDI_Pause NOT MIDI_IsPaused
+
+            CASE KEY_PLUS, KEY_EQUALS ' + = volume up
                 MIDI_SetVolume MIDI_GetVolume + 0.01
-                If MIDI_GetVolume > MIDI_VOLUME_MAX Then MIDI_SetVolume MIDI_VOLUME_MAX
+                IF MIDI_GetVolume > MIDI_VOLUME_MAX THEN MIDI_SetVolume MIDI_VOLUME_MAX
 
-            Case KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
+            CASE KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
                 MIDI_SetVolume MIDI_GetVolume - 0.01
-                If MIDI_GetVolume < MIDI_VOLUME_MIN Then MIDI_SetVolume MIDI_VOLUME_MIN
+                IF MIDI_GetVolume < MIDI_VOLUME_MIN THEN MIDI_SetVolume MIDI_VOLUME_MIN
 
-            Case KEY_UPPER_L, KEY_LOWER_L
-                MIDI_Loop Not MIDI_IsLooping
+            CASE KEY_UPPER_L, KEY_LOWER_L
+                MIDI_Loop NOT MIDI_IsLooping
 
-            Case KEY_F1
-                PlayMIDITune = EVENT_LOAD
-                Exit Do
+            CASE KEY_UPPER_O, KEY_LOWER_O ' O - toggle oscillator
+                AnalyzerType = AnalyzerType XOR 3
 
-            Case 21248 ' shift + delete - you know what this does :)
-                If MessageBox(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 Then
-                    Kill fileName
-                    k = KEY_ESCAPE
-                End If
-        End Select
+            CASE KEY_UPPER_B, KEY_LOWER_B ' B - toggle background
+                BackGroundType = (BackGroundType + 1) MOD 3
 
-        If TotalDroppedFiles > 0 Then
-            PlayMIDITune = EVENT_DROP
-            Exit Do
-        End If
+            CASE KEY_F1
+                OnPlayMIDITune = EVENT_LOAD
+                EXIT DO
 
-        Limit FRAME_RATE_MAX
-    Loop Until Not MIDI_IsPlaying Or k = KEY_ESCAPE
+            CASE KEY_F6 ' F6: quick save file loaded from ModArchive
+                QuickSave buffer, fileName
+
+            CASE 21248 ' shift + delete - you know what this does :)
+                IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
+                    MESSAGEBOX APP_NAME, "You cannot delete " + fileName + "!", "error"
+                ELSE
+                    IF MESSAGEBOX(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 THEN
+                        KILL fileName
+                        EXIT DO
+                    END IF
+                END IF
+        END SELECT
+
+        IF TOTALDROPPEDFILES > 0 THEN
+            OnPlayMIDITune = EVENT_DROP
+            EXIT DO
+        END IF
+
+        LIMIT FRAME_RATE_MAX
+    LOOP UNTIL NOT MIDI_IsPlaying OR k = KEY_ESCAPE
 
     MIDI_Stop
 
-    Title APP_NAME + " " + OS$ ' Set app title to the way it was
-End Function
+    TITLE APP_NAME + " " + OS$ ' Set app title to the way it was
+END FUNCTION
 
 
 ' Welcome screen loop
-Function DoWelcomeScreen~%%
-    Dim k As Long
-    Dim e As Unsigned Byte: e = EVENT_NONE
+FUNCTION OnWelcomeScreen%%
+    DIM k AS LONG
+    DIM e AS BYTE: e = EVENT_NONE
 
+    DO
+        CLS , BGRA_BLACK ' clear the framebuffer to black color
 
-    Do
-        Cls , Black ' clear the framebuffer to black color
+        UpdateAndDrawStars Stars(), 0.1!
 
-        DrawWeirdPlasma ' XD
+        LOCATE 1, 1
+        COLOR BGRA_ORANGERED, 0
+        IF TIMER MOD 7 = 0 THEN
+            PRINT "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (+_+)"
+        ELSEIF TIMER MOD 13 = 0 THEN
+            PRINT "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (*_*)"
+        ELSE
+            PRINT "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (-_-)"
+        END IF
+        PRINT "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
+        COLOR BGRA_WHITE
+        PRINT "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-.        "
+        PRINT "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |          "
+        COLOR BGRA_LIME
+        PRINT "_._______`-' ` `-'   `-'     '   '   ' ' `-'  '   '    ' `-` `-| `-' '________._"
+        PRINT " |                                                           `-'              | "
+        PRINT " |                                                                            | "
+        PRINT " |                                                                            | "
+        COLOR BGRA_YELLOW
+        PRINT " |                                                                            | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ............ ";: COLOR BGRA_MAGENTA: PRINT "MULTI-SELECT FILES";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F2";: COLOR BGRA_GRAY: PRINT " ......... ";: COLOR BGRA_MAGENTA: PRINT "PLAY FROM VGM ARCHIVE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F6";: COLOR BGRA_GRAY: PRINT " ................ ";: COLOR BGRA_MAGENTA: PRINT "QUICKSAVE FILE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "ESC";: COLOR BGRA_GRAY: PRINT " .................... ";: COLOR BGRA_MAGENTA: PRINT "NEXT/QUIT";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "SPC";: COLOR BGRA_GRAY: PRINT " ........................ ";: COLOR BGRA_MAGENTA: PRINT "PAUSE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "=|+";: COLOR BGRA_GRAY: PRINT " .............. ";: COLOR BGRA_MAGENTA: PRINT "INCREASE VOLUME";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "-|_";: COLOR BGRA_GRAY: PRINT " .............. ";: COLOR BGRA_MAGENTA: PRINT "DECREASE VOLUME";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "L|l";: COLOR BGRA_GRAY: PRINT " ......................... ";: COLOR BGRA_MAGENTA: PRINT "LOOP";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " .......... ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE ANALYZER TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ........ ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE BACKGROUND TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F|f";: COLOR BGRA_GRAY: PRINT " ............. ";: COLOR BGRA_MAGENTA: PRINT "FM SYNTHESIS ["; CHR$(78 + (-useFMSynth * 11)); "]";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                                                                            | "
+        PRINT " |                                                                            | "
+        PRINT " |                                                                            | "
+        PRINT " |   ";: COLOR BGRA_WHITE: PRINT "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: COLOR BGRA_YELLOW: PRINT "   | "
+        PRINT " | ";: COLOR BGRA_WHITE: PRINT "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: COLOR BGRA_YELLOW: PRINT "  | "
+        PRINT " |    ";: COLOR BGRA_WHITE: PRINT "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: COLOR BGRA_YELLOW: PRINT "    | "
+        PRINT " |                  ";: COLOR BGRA_WHITE: PRINT "https://github.com/a740g/MIDI-Player-64";: COLOR BGRA_YELLOW: PRINT "                   | "
+        PRINT "_|_                                                                          _|_"
+        PRINT " `/__________________________________________________________________________\' ";
 
-        Locate 1, 1
-        Color OrangeRed, 0
-        If Timer Mod 7 = 0 Then
-            Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (+_+)"
-        ElseIf Timer Mod 13 = 0 Then
-            Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (*_*)"
-        Else
-            Print "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (ù_ù)"
-        End If
-        Print "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |                        "
-        Color White
-        Print "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-.        "
-        Print "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |          "
-        Color Lime
-        Print "_._______`-' ` `-'   `-'     '   '   ' ' `-'  '   '    ' `-` `-| `-' '________._"
-        Print " |                                                           `-'              | "
-        Print " |                                                                            | "
-        Print " |                                                                            | "
-        Color Yellow
-        Print " |                     ";: Color Cyan: Print "F1";: Color Gray: Print " ............ ";: Color Magenta: Print "MULTI-SELECT FILES";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "ESC";: Color Gray: Print " .................... ";: Color Magenta: Print "NEXT/QUIT";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "SPC";: Color Gray: Print " ........................ ";: Color Magenta: Print "PAUSE";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "=|+";: Color Gray: Print " .............. ";: Color Magenta: Print "INCREASE VOLUME";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "-|_";: Color Gray: Print " .............. ";: Color Magenta: Print "DECREASE VOLUME";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "L|l";: Color Gray: Print " ......................... ";: Color Magenta: Print "LOOP";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                     ";: Color Cyan: Print "F|f";: Color Gray: Print " ............. ";: Color Magenta: Print "FM SYNTHESIS ["; Chr$(78 + (-useFMSynth * 11)); "]";: Color Yellow: Print "                     | "
-        Print " |                                                                            | "
-        Print " |                                                                            | "
-        Print " |   ";: Color White: Print "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: Color Yellow: Print "   | "
-        Print " | ";: Color White: Print "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: Color Yellow: Print "  | "
-        Print " |    ";: Color White: Print "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: Color Yellow: Print "    | "
-        Print " |                 ";: Color White: Print "https://github.com/a740g/QB64-MIDI-Player";: Color Yellow: Print "                  | "
-        Print "_|_                                                                          _|_"
-        Print " `/__________________________________________________________________________\' ";
+        k = KEYHIT
 
-        k = KeyHit
-
-        If k = KEY_ESCAPE Then
+        IF k = KEY_ESCAPE THEN
             e = EVENT_QUIT
-        ElseIf TotalDroppedFiles > 0 Then
+        ELSEIF TOTALDROPPEDFILES > 0 THEN
             e = EVENT_DROP
-        ElseIf k = KEY_F1 Then
+        ELSEIF k = KEY_F1 THEN
             e = EVENT_LOAD
-        ElseIf k = KEY_UPPER_F Or k = KEY_LOWER_F Then
-            useFMSynth = Not useFMSynth
-            RebootMIDILibrary
-        End If
+        ELSEIF k = KEY_F2 THEN
+            e = EVENT_HTTP
+        ELSEIF k = KEY_UPPER_F OR k = KEY_LOWER_F THEN
+            useFMSynth = NOT useFMSynth
+            RebootMIDILibrary ' kickstart the MIDI Player library with new settings
+        END IF
 
-        Display ' flip the framebuffer
+        DISPLAY ' flip the framebuffer
 
-        Limit FRAME_RATE_MAX
-    Loop While e = EVENT_NONE
+        LIMIT FRAME_RATE_MAX
+    LOOP WHILE e = EVENT_NONE
 
-    DoWelcomeScreen = e
-End Function
+    OnWelcomeScreen = e
+END FUNCTION
 
 
 ' Processes the command line one file at a time
-Function ProcessCommandLine~%%
-    Dim i As Unsigned Long
-    Dim e As Unsigned Byte: e = EVENT_NONE
+FUNCTION OnCommandLine%%
+    DIM e AS BYTE: e = EVENT_NONE
 
-    If GetProgramArgumentIndex(KEY_QUESTION_MARK) > 0 Then
+    IF GetProgramArgumentIndex(KEY_QUESTION_MARK) > 0 THEN
         MessageBox APP_NAME, APP_NAME + String$(2, KEY_ENTER) + _
         "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + Chr$(KEY_ENTER) + _
         "    -?: Shows this message" + String$(2, KEY_ENTER) + _
@@ -334,69 +461,235 @@ Function ProcessCommandLine~%%
         "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
-    Else
-        For i = 1 To CommandCount
-            e = PlayMIDITune(Command$(i))
-            If e <> EVENT_PLAY Then Exit For
-        Next
-    End If
+    ELSE
+        DIM i AS LONG: FOR i = 1 TO COMMANDCOUNT
+            e = OnPlayMIDITune(COMMAND$(i))
+            IF e <> EVENT_PLAY THEN EXIT FOR
+        NEXT
+    END IF
 
-    ProcessCommandLine = e
-End Function
+    OnCommandLine = e
+END FUNCTION
 
 
 ' Processes dropped files one file at a time
-Function ProcessDroppedFiles~%%
+FUNCTION OnDroppedFiles%%
     ' Make a copy of the dropped file and clear the list
-    ReDim fileNames(1 To TotalDroppedFiles) As String
-    Dim i As Unsigned Long
-    Dim e As Unsigned Byte: e = EVENT_NONE
+    REDIM fileNames(1 TO TOTALDROPPEDFILES) AS STRING
 
-    For i = 1 To TotalDroppedFiles
-        fileNames(i) = DroppedFile(i)
-    Next
-    FinishDrop ' This is critical
+    DIM e AS BYTE: e = EVENT_NONE
+
+    DIM i AS LONG: FOR i = 1 TO TOTALDROPPEDFILES
+        fileNames(i) = DROPPEDFILE(i)
+    NEXT
+    FINISHDROP ' this is critical
 
     ' Now play the dropped file one at a time
-    For i = LBound(fileNames) To UBound(fileNames)
-        e = PlayMIDITune(fileNames(i))
-        If e <> EVENT_PLAY Then Exit For
-    Next
+    FOR i = LBOUND(fileNames) TO UBOUND(fileNames)
+        e = OnPlayMIDITune(fileNames(i))
+        IF e <> EVENT_PLAY THEN EXIT FOR
+    NEXT
 
-    ProcessDroppedFiles = e
-End Function
+    OnDroppedFiles = e
+END FUNCTION
 
 
 ' Processes a list of files selected by the user
-Function ProcessSelectedFiles~%%
-    Dim ofdList As String
-    Dim e As Unsigned Byte: e = EVENT_NONE
+FUNCTION OnSelectedFiles%%
+    DIM ofdList AS STRING
+    DIM e AS BYTE: e = EVENT_NONE
 
-    ofdList = OpenFileDialog$(APP_NAME, , "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
+    ofdList = OPENFILEDIALOG$(APP_NAME, , "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
 
-    If ofdList = NULLSTRING Then Exit Function
+    IF ofdList = EMPTY_STRING THEN EXIT FUNCTION
 
-    ReDim fileNames(0 To 0) As String
-    Dim As Long i, j
+    REDIM fileNames(0 TO 0) AS STRING
 
-    j = TokenizeString(ofdList, "|", NULLSTRING, FALSE, fileNames())
+    DIM j AS LONG: j = TokenizeString(ofdList, "|", EMPTY_STRING, FALSE, fileNames())
 
-    For i = 0 To j - 1
-        e = PlayMIDITune(fileNames(i))
-        If e <> EVENT_PLAY Then Exit For
-    Next
+    DIM i AS LONG: FOR i = 0 TO j - 1
+        e = OnPlayMIDITune(fileNames(i))
+        IF e <> EVENT_PLAY THEN EXIT FOR
+    NEXT
 
-    ProcessSelectedFiles = e
-End Function
+    OnSelectedFiles = e
+END FUNCTION
+
+
+' Loads and plays random MIDIs from vgmusic.com
+FUNCTION OnVGMArchiveFiles%%
+    DIM e AS BYTE: e = EVENT_NONE
+    DIM modArchiveFileName AS STRING
+
+    DO
+        modArchiveFileName = GetRandomVGMArchiveFileName
+
+        TITLE "Downloading: " + GetFileNameFromPathOrURL(modArchiveFileName) + " - " + APP_NAME
+
+        e = OnPlayMIDITune(modArchiveFileName)
+    LOOP WHILE e = EVENT_NONE OR e = EVENT_PLAY
+
+    OnVGMArchiveFiles = e
+END FUNCTION
+
+
+' Gets a random file URL from www.modarchive.org
+FUNCTION GetRandomVGMArchiveFileName$
+    DIM buffer AS STRING: buffer = LoadFileFromURL("https://www.vgmusic.com/cgi/random.cgi?random_button=Random+Song")
+    DIM bufPos AS LONG: bufPos = INSTR(buffer, "You are listening to:")
+
+    IF bufPos > 0 THEN
+        bufPos = INSTR(bufPos, buffer, CHR$(KEY_QUOTATION_MARK)) ' find the position of the next quote
+        IF bufPos > 0 THEN
+            bufPos = bufPos + 1 ' skip the quote
+            GetRandomVGMArchiveFileName = MID$(buffer, bufPos, INSTR(bufPos, buffer, CHR$(KEY_QUOTATION_MARK)) - bufPos)
+        END IF
+    END IF
+END FUNCTION
+
+
+' Saves a file loaded from the internet
+SUB QuickSave (buffer AS STRING, fileName AS STRING)
+    STATIC savePath AS STRING, alwaysUseSamePath AS BYTE, stopNagging AS BYTE
+
+    IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
+        ' This is a file from the web
+        IF NOT DIREXISTS(savePath) OR NOT alwaysUseSamePath THEN ' only get the path if path does not exist or user wants to use a new path
+            savePath = SELECTFOLDERDIALOG$("Select a folder to save the file:", savePath)
+            IF savePath = "" THEN EXIT SUB ' exit if user cancelled
+
+            savePath = FixPathDirectoryName(savePath)
+        END IF
+
+        DIM saveFileName AS STRING: saveFileName = savePath + GetLegalFileName(GetFileNameFromPathOrURL(fileName))
+
+        IF FILEEXISTS(saveFileName) THEN
+            IF MESSAGEBOX(APP_NAME, "Overwrite " + saveFileName + "?", "yesno", "warning", 0) = 0 THEN EXIT SUB
+        END IF
+
+        IF SaveFile(buffer, saveFileName, TRUE) THEN
+            MESSAGEBOX APP_NAME, saveFileName + " saved.", "info"
+        ELSE
+            MESSAGEBOX APP_NAME, "Failed to save: " + saveFileName, "warning"
+            EXIT SUB
+        END IF
+
+        ' Check if user want to use the same path in the future
+        IF NOT stopNagging THEN
+            SELECT CASE MESSAGEBOX(APP_NAME, "Do you want to use " + savePath + " for future saves?", "yesnocancel", "question", 1)
+                CASE 0
+                    stopNagging = TRUE
+                CASE 1
+                    alwaysUseSamePath = TRUE
+                CASE 2
+                    alwaysUseSamePath = FALSE
+            END SELECT
+        END IF
+    ELSE
+        ' This is a local file - do nothing
+        MESSAGEBOX APP_NAME, "You cannot save local file " + fileName + "!", "error"
+    END IF
+END SUB
+
+
+SUB InitializeStars (stars() AS StarType)
+    DIM L AS LONG: L = LBOUND(stars)
+    DIM U AS LONG: U = UBOUND(stars)
+    DIM W AS LONG: W = WIDTH
+    DIM H AS LONG: H = HEIGHT
+
+    DIM i AS LONG: FOR i = L TO U
+        stars(i).p.x = GetRandomValue(0, W - 1)
+        stars(i).p.y = GetRandomValue(0, H - 1)
+        stars(i).p.z = 4096.0!
+        stars(i).c = RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
+    NEXT
+END SUB
+
+
+SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
+    DIM L AS LONG: L = LBOUND(stars)
+    DIM U AS LONG: U = UBOUND(stars)
+    DIM W AS LONG: W = WIDTH
+    DIM H AS LONG: H = HEIGHT
+
+    DIM i AS LONG: FOR i = L TO U
+        IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
+            stars(i).p.x = GetRandomValue(0, W - 1)
+            stars(i).p.y = GetRandomValue(0, H - 1)
+            stars(i).p.z = 4096.0!
+            stars(i).c = RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
+        END IF
+
+        PSET (stars(i).p.x, stars(i).p.y), stars(i).c
+
+        stars(i).p.z = stars(i).p.z + speed
+        stars(i).p.x = ((stars(i).p.x - (W / 2)) * (stars(i).p.z / 4096.0!)) + (W / 2)
+        stars(i).p.y = ((stars(i).p.y - (H / 2)) * (stars(i).p.z / 4096.0!)) + (H / 2)
+    NEXT
+END SUB
+
+
+SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
+    DIM L AS LONG: L = LBOUND(circleWaves)
+    DIM U AS LONG: U = UBOUND(circleWaves)
+    DIM W AS LONG: W = WIDTH
+    DIM H AS LONG: H = HEIGHT
+
+    DIM i AS LONG: FOR i = L TO U
+        circleWaves(i).a = 0.0!
+        circleWaves(i).r = GetRandomValue(10, 40)
+        circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
+        circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
+        circleWaves(i).v.x = (RND - RND) / 3.0!
+        circleWaves(i).v.y = (RND - RND) / 3.0!
+        circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
+        circleWaves(i).c.r = GetRandomValue(0, 128)
+        circleWaves(i).c.g = GetRandomValue(0, 128)
+        circleWaves(i).c.b = GetRandomValue(0, 128)
+    NEXT
+END SUB
+
+
+SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
+    DIM L AS LONG: L = LBOUND(circleWaves)
+    DIM U AS LONG: U = UBOUND(circleWaves)
+    DIM W AS LONG: W = WIDTH
+    DIM H AS LONG: H = HEIGHT
+
+    DIM i AS LONG: FOR i = U TO L STEP -1
+        circleWaves(i).a = circleWaves(i).a + circleWaves(i).s
+        circleWaves(i).r = circleWaves(i).r + circleWaves(i).s * 10.0!
+        circleWaves(i).p.x = circleWaves(i).p.x + circleWaves(i).v.x
+        circleWaves(i).p.y = circleWaves(i).p.y + circleWaves(i).v.y
+
+        IF circleWaves(i).a >= 1.0! THEN circleWaves(i).s = circleWaves(i).s * -1
+
+        IF circleWaves(i).a <= 0.0! THEN
+            circleWaves(i).a = 0.0!
+            circleWaves(i).r = GetRandomValue(10, 40)
+            circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
+            circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
+            circleWaves(i).v.x = (RND - RND) / 3.0!
+            circleWaves(i).v.y = (RND - RND) / 3.0!
+            circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
+            circleWaves(i).c.r = GetRandomValue(0, 128)
+            circleWaves(i).c.g = GetRandomValue(0, 128)
+            circleWaves(i).c.b = GetRandomValue(0, 128)
+        END IF
+
+        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255 * circleWaves(i).a)
+    NEXT
+END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' MODULE FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$Include:'include/ProgramArgs.bas'
-'$Include:'include/FileOps.bas'
-'$Include:'include/StringOps.bas'
-'$Include:'include/MIDIPlayer.bas'
+'$INCLUDE:'include/ProgramArgs.bas'
+'$INCLUDE:'include/FileOps.bas'
+'$INCLUDE:'include/StringOps.bas'
+'$INCLUDE:'include/MIDIPlayer.bas'
+'$INCLUDE:'include/GfxEx.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
-

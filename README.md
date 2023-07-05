@@ -1,9 +1,16 @@
 # MIDI PLAYER 64
 
-This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player and library based on [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2) and [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser) C single-header libraries.
+This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player and library based on:
 
-![Screenshot](screenshots/Screenshot1.png)
-![Screenshot](screenshots/Screenshot2.png)
+- [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2)
+- [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser)
+- [ymfm](https://github.com/aaronsgiles/ymfm) (a collection of Yamaha FM sound cores)
+- [ymfmidi](https://github.com/devinacker/ymfmidi) (a MIDI library based on the OPL3 emulation core from ymfm)
+
+---
+![Screenshot 1](screenshots/Screenshot1.png)
+![Screenshot 2](screenshots/Screenshot2.png)
+![Screenshot 3](screenshots/Screenshot3.png)
 
 ## FEATURES
 
@@ -11,7 +18,7 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player 
 - Cross-platform (works on Windows, Linux & macOS)
 - Everything is statically linked (no shared library dependency)
 - Demo player that shows how to use the library
-- Experimental OPL3 emulation
+- SoundFont and FM Synthesis support
 
 ## USAGE
 
@@ -43,12 +50,12 @@ Function MIDI_GetTotalTime#
 Function MIDI_GetCurrentTime#
 Function MIDI_GetActiveVoices~&
 Function MIDI_IsFMSynthesis%%
-Sub MIDI_Update (bufferTime As Single)
+Sub MIDI_Update (bufferTimeSecs As Single)
 ```
 
 ## NOTES
 
-- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
+- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest)
 - Mixing this with QB64-PE's [$MIDISOUNDFONT](https://qb64phoenix.com/qb64wiki/index.php/$MIDISOUNDFONT) will not work
 - When you clone a repository that contains submodules, the submodules are not automatically cloned by default
 - You will need to use the `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
