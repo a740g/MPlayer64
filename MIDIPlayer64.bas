@@ -8,6 +8,7 @@
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/Colors.bi'
 '$INCLUDE:'include/FileOps.bi'
+'$INCLUDE:'include/StringOps.bi'
 '$INCLUDE:'include/AnalyzerFFT.bi'
 '$INCLUDE:'include/MIDIPlayer.bi'
 '-----------------------------------------------------------------------------------------------------------------------
@@ -27,8 +28,8 @@ $VERSIONINFO:OriginalFilename=MIDIPlayer64.exe
 $VERSIONINFO:ProductName=MIDI Player 64
 $VERSIONINFO:Web=https://github.com/a740g
 $VERSIONINFO:Comments=https://github.com/a740g
-$VERSIONINFO:FILEVERSION#=2,1,0,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,0,0
+$VERSIONINFO:FILEVERSION#=2,1,1,0
+$VERSIONINFO:PRODUCTVERSION#=2,1,1,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -170,18 +171,12 @@ SUB DrawVisualization
     IF MIDI_IsPaused OR NOT MIDI_IsPlaying THEN COLOR BGRA_ORANGERED ELSE COLOR BGRA_WHITE
 
     ' Draw the tune info
-    DIM AS STRING * 2 minute, second
-
-    LOCATE 21, 49: PRINT "Buffered sound:"; FIX(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000); "ms ";
+    LOCATE 21, 49: PRINT "Buffered sound:"; FIX(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000); "ms";
     LOCATE 22, 57: PRINT "Voices:"; MIDI_GetActiveVoices;
-    LOCATE 23, 49: PRINT USING "Current volume: ###%"; MIDI_GetVolume * 100;
-    minute = RIGHT$("00" + LTRIM$(STR$((MIDI_GetCurrentTime + 500) \ 60000)), 2)
-    second = RIGHT$("00" + LTRIM$(STR$(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60)), 2)
-    LOCATE 24, 51: PRINT USING "Elapsed time: &:& (mm:ss)"; minute; second
-    minute = RIGHT$("00" + LTRIM$(STR$((MIDI_GetTotalTime + 500) \ 60000)), 2)
-    second = RIGHT$("00" + LTRIM$(STR$(((MIDI_GetTotalTime + 500) \ 1000) MOD 60)), 2)
-    LOCATE 25, 53: PRINT USING "Total time: &:& (mm:ss)"; minute; second
-    LOCATE 26, 56: PRINT "Looping: "; BoolToStr(MIDI_IsLooping, 2); " ";
+    LOCATE 23, 49: PRINT FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%")
+    LOCATE 24, 51: PRINT FormatLong((MIDI_GetCurrentTime + 500) \ 60000, "Elapsed time: %.2i"); FormatLong(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
+    LOCATE 25, 53: PRINT FormatLong((MIDI_GetTotalTime + 500) \ 60000, "Total time: %.2i"); FormatLong(((MIDI_GetTotalTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
+    LOCATE 26, 56: PRINT "Looping: "; FormatBoolean(MIDI_IsLooping, 4);
 
     COLOR BGRA_CYAN
 
@@ -252,7 +247,7 @@ SUB DrawVisualization
     text = STR$(SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
     LOCATE 3, 2: PRINT text;
     LOCATE 11, 2: PRINT text;
-    text = STR$(__MIDI_Player.soundBufferFrames * SNDRATE \ SHL(__MIDI_Player.soundBufferFrames, 2)) + " [Hz]"
+    text = STR$(__MIDI_Player.soundBufferFrames * SNDRATE \ SHL(__MIDI_Player.soundBufferFrames, 1)) + " [Hz]"
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
@@ -686,10 +681,11 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 ' MODULE FILES
 '-----------------------------------------------------------------------------------------------------------------------
+'$INCLUDE:'include/Colors.bas'
 '$INCLUDE:'include/ProgramArgs.bas'
 '$INCLUDE:'include/FileOps.bas'
 '$INCLUDE:'include/StringOps.bas'
-'$INCLUDE:'include/MIDIPlayer.bas'
 '$INCLUDE:'include/GfxEx.bas'
+'$INCLUDE:'include/MIDIPlayer.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
