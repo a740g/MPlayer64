@@ -6,6 +6,7 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
+'$INCLUDE:'include/BitwiseOps.bi'
 '$INCLUDE:'include/Colors.bi'
 '$INCLUDE:'include/FileOps.bi'
 '$INCLUDE:'include/StringOps.bi'
@@ -87,7 +88,7 @@ ACCEPTFILEDROP ' enable drag and drop of files
 SCREEN NEWIMAGE(640, 480, 32) ' use 640x480 resolution
 ALLOWFULLSCREEN SQUAREPIXELS , SMOOTH ' allow the user to press Alt+Enter to go fullscreen
 PRINTMODE KEEPBACKGROUND ' print without wiping out the background
-srand TIMER ' seed RNG
+SetRandomSeed TIMER ' seed RNG
 DISPLAY ' only swap display buffer when we want
 AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
@@ -594,10 +595,10 @@ SUB InitializeStars (stars() AS StarType)
     DIM H AS LONG: H = HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
-        stars(i).p.x = GetRandomValue(0, W - 1)
-        stars(i).p.y = GetRandomValue(0, H - 1)
+        stars(i).p.x = GetRandomBetween(0, W - 1)
+        stars(i).p.y = GetRandomBetween(0, H - 1)
         stars(i).p.z = 4096.0!
-        stars(i).c = RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
+        stars(i).c = RGBA32(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
     NEXT
 END SUB
 
@@ -610,10 +611,10 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
 
     DIM i AS LONG: FOR i = L TO U
         IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
-            stars(i).p.x = GetRandomValue(0, W - 1)
-            stars(i).p.y = GetRandomValue(0, H - 1)
+            stars(i).p.x = GetRandomBetween(0, W - 1)
+            stars(i).p.y = GetRandomBetween(0, H - 1)
             stars(i).p.z = 4096.0!
-            stars(i).c = RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
+            stars(i).c = RGBA32(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
         END IF
 
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
@@ -633,15 +634,15 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
 
     DIM i AS LONG: FOR i = L TO U
         circleWaves(i).a = 0.0!
-        circleWaves(i).r = GetRandomValue(10, 40)
-        circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
-        circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
+        circleWaves(i).r = GetRandomBetween(10, 40)
+        circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
+        circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
         circleWaves(i).v.x = (RND - RND) / 3.0!
         circleWaves(i).v.y = (RND - RND) / 3.0!
-        circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
-        circleWaves(i).c.r = GetRandomValue(0, 128)
-        circleWaves(i).c.g = GetRandomValue(0, 128)
-        circleWaves(i).c.b = GetRandomValue(0, 128)
+        circleWaves(i).s = GetRandomBetween(1, 100) / 4000.0!
+        circleWaves(i).c.r = GetRandomBetween(0, 128)
+        circleWaves(i).c.g = GetRandomBetween(0, 128)
+        circleWaves(i).c.b = GetRandomBetween(0, 128)
     NEXT
 END SUB
 
@@ -662,15 +663,15 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
 
         IF circleWaves(i).a <= 0.0! THEN
             circleWaves(i).a = 0.0!
-            circleWaves(i).r = GetRandomValue(10, 40)
-            circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
-            circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
+            circleWaves(i).r = GetRandomBetween(10, 40)
+            circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
+            circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
             circleWaves(i).v.x = (RND - RND) / 3.0!
             circleWaves(i).v.y = (RND - RND) / 3.0!
-            circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
-            circleWaves(i).c.r = GetRandomValue(0, 128)
-            circleWaves(i).c.g = GetRandomValue(0, 128)
-            circleWaves(i).c.b = GetRandomValue(0, 128)
+            circleWaves(i).s = GetRandomBetween(1, 100) / 4000.0!
+            circleWaves(i).c.r = GetRandomBetween(0, 128)
+            circleWaves(i).c.g = GetRandomBetween(0, 128)
+            circleWaves(i).c.b = GetRandomBetween(0, 128)
         END IF
 
         CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255 * circleWaves(i).a)
