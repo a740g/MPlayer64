@@ -74,7 +74,7 @@ END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED useFMSynth AS BYTE
 DIM SHARED AS LONG AnalyzerType, BackGroundType
-REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerLeft(0 TO 0), SpectrumAnalyzerRight(0 TO 0)
+REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO 0), SpectrumAnalyzerR(0 TO 0)
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
@@ -144,15 +144,16 @@ END SUB
 ' Draws the screen during playback
 SUB DrawVisualization
     SHARED __MIDI_Player AS __MIDI_PlayerType
+    SHARED __MIDI_SoundBuffer() AS SINGLE
 
     DIM AS SINGLE lSamp, rSamp, power
 
     ' Get the sound buffer peak/power
-    DIM upperBound AS LONG: upperBound = __MIDI_Player.soundBufferBytes - __MIDI_SOUND_BUFFER_SAMPLE_SIZE
+    DIM upperBound AS LONG: upperBound = __MIDI_Player.soundBufferFrames - 1
 
-    DIM i AS LONG: FOR i = 0 TO upperBound STEP __MIDI_SOUND_BUFFER_FRAME_SIZE
-        lSamp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i, SINGLE)
-        rSamp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i + __MIDI_SOUND_BUFFER_SAMPLE_SIZE, SINGLE)
+    DIM i AS LONG: FOR i = 0 TO upperBound
+        lSamp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i)
+        rSamp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1)
         power = power + lSamp * lSamp + rSamp * rSamp ' we'll use this to calculate the sound power right after the loop
     NEXT
 
@@ -224,12 +225,12 @@ SUB DrawVisualization
     FOR i = 0 TO upperBound
         xp = 21 + (i * 598) \ upperBound ' 21 = x_start, 598 = oscillator_width
 
-        yp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_Player.soundBuffer.OFFSET + i * __MIDI_SOUND_BUFFER_FRAME_SIZE, SINGLE) * 47
+        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i) * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 96 ELSE yp = yp + 96 ' 96 = y_start, 47 = oscillator_height
         LINE (xp, 96)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
 
-        yp = MEMGET(__MIDI_Player.soundBuffer, __MIDI_SOUND_BUFFER_SAMPLE_SIZE + __MIDI_Player.soundBuffer.OFFSET + i * __MIDI_SOUND_BUFFER_FRAME_SIZE, SINGLE) * 47
+        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1) * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
         LINE (xp, 224)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
@@ -256,8 +257,8 @@ SUB DrawVisualization
     DIM fftBits AS LONG: fftBits = LeftShiftOneCount(__MIDI_Player.soundBufferFrames) ' get the count of bits that the FFT routine will need
 
     ' Do RFFT for both left and right channel
-    AnalyzerFFTSingle OFFSET(SpectrumAnalyzerLeft(0)), __MIDI_Player.soundBuffer.OFFSET, 2, fftBits ' the left samples first
-    AnalyzerFFTSingle OFFSET(SpectrumAnalyzerRight(0)), __MIDI_Player.soundBuffer.OFFSET + __MIDI_SOUND_BUFFER_SAMPLE_SIZE, 2, fftBits ' and now the right ones
+    AnalyzerFFTSingle SpectrumAnalyzerL(0), __MIDI_SoundBuffer(0), 2, fftBits ' the left samples first
+    AnalyzerFFTSingle SpectrumAnalyzerR(0), __MIDI_SoundBuffer(1), 2, fftBits ' and now the right ones
 
     upperBound = __MIDI_Player.soundBufferFrames \ 2 - 1
 
@@ -265,13 +266,13 @@ SUB DrawVisualization
         xp = 21 + (i * 596) \ upperBound ' 21 = x_start, 598 = oscillator_width
 
         ' Draw the left one first
-        yp = SHR(SpectrumAnalyzerLeft(i), 5)
+        yp = SHR(SpectrumAnalyzerL(i), 5)
         IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
         c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 143)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
 
         ' Then the right one
-        yp = SHR(SpectrumAnalyzerRight(i), 5)
+        yp = SHR(SpectrumAnalyzerR(i), 5)
         IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
         c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 271)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
@@ -301,7 +302,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     END IF
 
     ' Setup the FFT arrays
-    REDIM AS UNSIGNED INTEGER SpectrumAnalyzerLeft(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerRight(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
+    REDIM AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerR(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
     TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
