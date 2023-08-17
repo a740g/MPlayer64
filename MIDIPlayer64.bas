@@ -7,9 +7,10 @@
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/BitwiseOps.bi'
-'$INCLUDE:'include/Colors.bi'
+'$INCLUDE:'include/ColorOps.bi'
 '$INCLUDE:'include/FileOps.bi'
 '$INCLUDE:'include/StringOps.bi'
+'$INCLUDE:'include/MathOps.bi'
 '$INCLUDE:'include/AnalyzerFFT.bi'
 '$INCLUDE:'include/MIDIPlayer.bi'
 '-----------------------------------------------------------------------------------------------------------------------
@@ -29,8 +30,8 @@ $VERSIONINFO:OriginalFilename=MIDIPlayer64.exe
 $VERSIONINFO:ProductName=MIDI Player 64
 $VERSIONINFO:Web=https://github.com/a740g
 $VERSIONINFO:Comments=https://github.com/a740g
-$VERSIONINFO:FILEVERSION#=2,1,1,0
-$VERSIONINFO:PRODUCTVERSION#=2,1,1,0
+$VERSIONINFO:FILEVERSION#=2,2,0,0
+$VERSIONINFO:PRODUCTVERSION#=2,2,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -72,8 +73,8 @@ END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 ' GLOBAL VARIABLES
 '-----------------------------------------------------------------------------------------------------------------------
-DIM SHARED useFMSynth AS BYTE
-DIM SHARED AS LONG AnalyzerType, BackGroundType
+DIM SHARED AS LONG AnalyzerType, BackgroundType, FreqFact, Magnification
+DIM SHARED AmpBoost AS SINGLE, useFMSynth AS BYTE
 REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO 0), SpectrumAnalyzerR(0 TO 0)
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
@@ -91,7 +92,10 @@ PRINTMODE KEEPBACKGROUND ' print without wiping out the background
 SetRandomSeed TIMER ' seed RNG
 DISPLAY ' only swap display buffer when we want
 AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
-BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
+BackgroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
+FreqFact = 2 ' frequency spectrum X-axis scale (powers of two only [2 - 8])
+Magnification = 5 ' frequency spectrum Y-axis scale (magnitude [3 - 7])
+AmpBoost = 1! ' oscillator amplitude (1.0 - 5.0)
 InitializeStars Stars()
 InitializeCircleWaves CircleWaves()
 
@@ -146,23 +150,16 @@ SUB DrawVisualization
     SHARED __MIDI_Player AS __MIDI_PlayerType
     SHARED __MIDI_SoundBuffer() AS SINGLE
 
-    DIM AS SINGLE lSamp, rSamp, power
+    DIM fftBits AS LONG: fftBits = LeftShiftOneCount(__MIDI_Player.soundBufferFrames) ' get the count of bits that the FFT routine will need
 
-    ' Get the sound buffer peak/power
-    DIM upperBound AS LONG: upperBound = __MIDI_Player.soundBufferFrames - 1
-
-    DIM i AS LONG: FOR i = 0 TO upperBound
-        lSamp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i)
-        rSamp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1)
-        power = power + lSamp * lSamp + rSamp * rSamp ' we'll use this to calculate the sound power right after the loop
-    NEXT
-
-    power = power / (__MIDI_Player.soundBufferFrames * 2) ' because each frame has 2 samples (L & R)
+    ' Do FFT and calculate power for both left and right channel
+    DIM AS SINGLE power
+    power = (AnalyzerFFTSingle(SpectrumAnalyzerL(0), __MIDI_SoundBuffer(0), 2, fftBits) + AnalyzerFFTSingle(SpectrumAnalyzerR(0), __MIDI_SoundBuffer(1), 2, fftBits)) / 2!
 
     CLS , BGRA_BLACK ' clear the framebuffer to black color
 
     ' Draw the background
-    SELECT CASE BackGroundType
+    SELECT CASE BackgroundType
         CASE 1
             ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
             UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - power)
@@ -182,19 +179,24 @@ SUB DrawVisualization
 
     COLOR BGRA_CYAN
 
-    LOCATE 20, 5: PRINT "F1 - MULTI-SELECT FILES";
-    LOCATE 21, 5: PRINT "F6 - QUICKSAVE FILE";
-    LOCATE 22, 4: PRINT "O|o - TOGGLE ANALYZER TYPE";
-    LOCATE 23, 4: PRINT "B/b - TOGGLE BACKGROUND TYPE";
-    LOCATE 24, 4: PRINT "ESC - NEXT / QUIT";
-    LOCATE 25, 4: PRINT "SPC - PLAY / PAUSE";
-    LOCATE 26, 4: PRINT "=|+ - INCREASE VOLUME";
-    LOCATE 27, 4: PRINT "-|_ - DECREASE VOLUME";
-    LOCATE 28, 4: PRINT "L|l - LOOP";
+    IF AnalyzerType = 2 THEN
+        LOCATE 19, 4: PRINT "F/f - FREQUENCY ZOOM IN / OUT";
+        LOCATE 20, 4: PRINT "M/m - MAGNITUDE SCALE UP / DOWN";
+    ELSE
+        LOCATE 20, 4: PRINT "V/v - ANALYZER AMPLITUDE UP / DOWN";
+    END IF
+    LOCATE 21, 5: PRINT "F1 - MULTI-SELECT FILES";
+    LOCATE 22, 5: PRINT "F6 - QUICKSAVE FILE";
+    LOCATE 23, 4: PRINT "O|o - TOGGLE ANALYZER TYPE";
+    LOCATE 24, 4: PRINT "B/b - TOGGLE BACKGROUND TYPE";
+    LOCATE 25, 4: PRINT "ESC - NEXT / QUIT";
+    LOCATE 26, 4: PRINT "SPC - PLAY / PAUSE";
+    LOCATE 27, 4: PRINT "=|+ - INCREASE VOLUME";
+    LOCATE 28, 4: PRINT "-|_ - DECREASE VOLUME";
+    LOCATE 29, 4: PRINT "L|l - LOOP";
 
-    DIM text AS STRING
-    DIM AS LONG xp, yp
-    DIM AS UNSIGNED LONG c
+    DIM AS LONG i, xp, yp
+    DIM text AS STRING, c AS UNSIGNED LONG
 
     ON AnalyzerType GOSUB DrawOscillators, DrawFFT
 
@@ -209,6 +211,8 @@ SUB DrawVisualization
     '-------------------------------------------------------------------------------------------------------------------
     DrawOscillators: ' animate waveform oscillators
     '-------------------------------------------------------------------------------------------------------------------
+    COLOR BGRA_DARKORANGE
+    LOCATE 1, 23: PRINT USING "Current amplitude boost factor = #.##"; AmpBoost;
     COLOR BGRA_WHITE
     LOCATE 3, 29: PRINT "Left channel (wave plot)";
     LOCATE 11, 29: PRINT "Right channel (wave plot)"
@@ -220,21 +224,22 @@ SUB DrawVisualization
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
 
-    upperBound = __MIDI_Player.soundBufferFrames - 1
+    i = 0
+    DO WHILE i < __MIDI_Player.soundBufferFrames
+        xp = 21 + (i * 598) \ __MIDI_Player.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
 
-    FOR i = 0 TO upperBound
-        xp = 21 + (i * 598) \ upperBound ' 21 = x_start, 598 = oscillator_width
-
-        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i) * 47
+        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i) * AmpBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 96 ELSE yp = yp + 96 ' 96 = y_start, 47 = oscillator_height
         LINE (xp, 96)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
 
-        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1) * 47
+        yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1) * AmpBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
         LINE (xp, 224)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
-    NEXT
+
+        i = i + 1
+    LOOP
 
     RETURN
     '-------------------------------------------------------------------------------------------------------------------
@@ -242,6 +247,8 @@ SUB DrawVisualization
     '-------------------------------------------------------------------------------------------------------------------
     DrawFFT: ' animate FFT frequency oscillators
     '-------------------------------------------------------------------------------------------------------------------
+    COLOR BGRA_DARKORANGE
+    LOCATE 1, 5: PRINT USING "Current frequence zoom factor = #  /  Current magnitude scale factor = #"; FreqFact; Magnification;
     COLOR BGRA_WHITE
     LOCATE 3, 23: PRINT "Left channel (frequency spectrum)";
     LOCATE 11, 23: PRINT "Right channel (frequency spectrum)";
@@ -249,34 +256,30 @@ SUB DrawVisualization
     text = STR$(SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
     LOCATE 3, 2: PRINT text;
     LOCATE 11, 2: PRINT text;
-    text = STR$(__MIDI_Player.soundBufferFrames * SNDRATE \ SHL(__MIDI_Player.soundBufferFrames, 1)) + " [Hz]"
+    DIM freqMax AS LONG: freqMax = __MIDI_Player.soundBufferFrames \ FreqFact
+    text = STR$(freqMax * SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
 
-    DIM fftBits AS LONG: fftBits = LeftShiftOneCount(__MIDI_Player.soundBufferFrames) ' get the count of bits that the FFT routine will need
-
-    ' Do RFFT for both left and right channel
-    AnalyzerFFTSingle SpectrumAnalyzerL(0), __MIDI_SoundBuffer(0), 2, fftBits ' the left samples first
-    AnalyzerFFTSingle SpectrumAnalyzerR(0), __MIDI_SoundBuffer(1), 2, fftBits ' and now the right ones
-
-    upperBound = __MIDI_Player.soundBufferFrames \ 2 - 1
-
-    FOR i = 0 TO upperBound
-        xp = 21 + (i * 596) \ upperBound ' 21 = x_start, 598 = oscillator_width
+    DIM barWidth AS LONG: barWidth = SHR(FreqFact, 1): i = 0
+    DO WHILE i < freqMax
+        xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
 
         ' Draw the left one first
-        yp = SHR(SpectrumAnalyzerL(i), 5)
+        yp = SHR(SpectrumAnalyzerL(i), Magnification)
         IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
         c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
-        LINE (xp, 143)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
+        LINE (xp, 143)-(xp + barWidth, yp), RGBA32(c, 255 - c, 0, 255), BF
 
         ' Then the right one
-        yp = SHR(SpectrumAnalyzerR(i), 5)
+        yp = SHR(SpectrumAnalyzerR(i), Magnification)
         IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
         c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
-        LINE (xp, 271)-(xp + 2, yp), RGBA32(c, 255 - c, 0, 255), BF
-    NEXT
+        LINE (xp, 271)-(xp + barWidth, yp), RGBA32(c, 255 - c, 0, 255), BF
+
+        i = i + 1
+    LOOP
 
     RETURN
     '-------------------------------------------------------------------------------------------------------------------
@@ -307,6 +310,10 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     ' Set the app title to display the file name
     TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
 
+    ' Reset absurd volume levels when using SoundFonts
+    IF NOT useFMSynth THEN MIDI_SetVolume MinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
+
+    ' Kickstart playback
     MIDI_Play
 
     DIM k AS LONG
@@ -319,31 +326,47 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
         k = KEYHIT
 
         SELECT CASE k
-            CASE KEY_SPACE
+            CASE KEY_SPACE ' toggle pause
                 MIDI_Pause NOT MIDI_IsPaused
 
-            CASE KEY_PLUS, KEY_EQUALS ' + = volume up
-                MIDI_SetVolume MIDI_GetVolume + 0.01
-                IF MIDI_GetVolume > MIDI_VOLUME_MAX THEN MIDI_SetVolume MIDI_VOLUME_MAX
+            CASE KEY_PLUS, KEY_EQUALS ' volume up
+                IF MIDI_GetVolume < MIDI_VOLUME_MAX + -useFMSynth * MIDI_VOLUME_MAX THEN MIDI_SetVolume MIDI_GetVolume + 0.01! ' allow boosting volume when FM is used
 
-            CASE KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
-                MIDI_SetVolume MIDI_GetVolume - 0.01
-                IF MIDI_GetVolume < MIDI_VOLUME_MIN THEN MIDI_SetVolume MIDI_VOLUME_MIN
+            CASE KEY_MINUS, KEY_UNDERSCORE ' volume down
+                IF MIDI_GetVolume > MIDI_VOLUME_MIN THEN MIDI_SetVolume MIDI_GetVolume - 0.01!
 
-            CASE KEY_UPPER_L, KEY_LOWER_L
+            CASE KEY_UPPER_L, KEY_LOWER_L ' toggle looping
                 MIDI_Loop NOT MIDI_IsLooping
 
-            CASE KEY_UPPER_O, KEY_LOWER_O ' O - toggle oscillator
+            CASE KEY_UPPER_O, KEY_LOWER_O ' toggle oscillator
                 AnalyzerType = AnalyzerType XOR 3
 
-            CASE KEY_UPPER_B, KEY_LOWER_B ' B - toggle background
-                BackGroundType = (BackGroundType + 1) MOD 3
+            CASE KEY_UPPER_B, KEY_LOWER_B ' toggle background
+                BackgroundType = (BackgroundType + 1) MOD 3
 
-            CASE KEY_F1
+            CASE KEY_UPPER_F ' zoom in (smaller freq range)
+                IF FreqFact < 8 THEN FreqFact = FreqFact * 2
+
+            CASE KEY_LOWER_F ' zoom out (bigger freq range)
+                IF FreqFact > 2 THEN FreqFact = FreqFact \ 2
+
+            CASE KEY_UPPER_M ' scale up (bring out peaks)
+                IF Magnification > 3 THEN Magnification = Magnification - 1
+
+            CASE KEY_LOWER_M ' scale down (flatten peaks)
+                IF Magnification < 7 THEN Magnification = Magnification + 1
+
+            CASE 86 ' oscillator amplitude up
+                IF AmpBoost < 5.0! THEN AmpBoost = AmpBoost + 0.05!
+
+            CASE 118 ' oscillator amplitude down
+                IF AmpBoost > 1.0! THEN AmpBoost = AmpBoost - 0.05!
+
+            CASE KEY_F1 ' load file
                 OnPlayMIDITune = EVENT_LOAD
                 EXIT DO
 
-            CASE KEY_F6 ' F6: quick save file loaded from ModArchive
+            CASE KEY_F6 ' quick save file loaded from ModArchive
                 QuickSave buffer, fileName
 
             CASE 21248 ' shift + delete - you know what this does :)
@@ -598,8 +621,8 @@ SUB InitializeStars (stars() AS StarType)
     DIM i AS LONG: FOR i = L TO U
         stars(i).p.x = GetRandomBetween(0, W - 1)
         stars(i).p.y = GetRandomBetween(0, H - 1)
-        stars(i).p.z = 4096.0!
-        stars(i).c = RGBA32(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
+        stars(i).p.z = 4096!
+        stars(i).c = ToBGRA(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
     NEXT
 END SUB
 
@@ -614,15 +637,15 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
         IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
             stars(i).p.x = GetRandomBetween(0, W - 1)
             stars(i).p.y = GetRandomBetween(0, H - 1)
-            stars(i).p.z = 4096.0!
-            stars(i).c = RGBA32(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
+            stars(i).p.z = 4096!
+            stars(i).c = ToBGRA(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
         END IF
 
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - (W / 2)) * (stars(i).p.z / 4096.0!)) + (W / 2)
-        stars(i).p.y = ((stars(i).p.y - (H / 2)) * (stars(i).p.z / 4096.0!)) + (H / 2)
+        stars(i).p.x = ((stars(i).p.x - SHR(W, 1)) * (stars(i).p.z / 4096!)) + SHR(W, 1)
+        stars(i).p.y = ((stars(i).p.y - SHR(H, 1)) * (stars(i).p.z / 4096!)) + SHR(H, 1)
     NEXT
 END SUB
 
@@ -634,13 +657,13 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
     DIM H AS LONG: H = HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
-        circleWaves(i).a = 0.0!
+        circleWaves(i).a = 0!
         circleWaves(i).r = GetRandomBetween(10, 40)
         circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
         circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
-        circleWaves(i).v.x = (RND - RND) / 3.0!
-        circleWaves(i).v.y = (RND - RND) / 3.0!
-        circleWaves(i).s = GetRandomBetween(1, 100) / 4000.0!
+        circleWaves(i).v.x = (RND - RND) / 3!
+        circleWaves(i).v.y = (RND - RND) / 3!
+        circleWaves(i).s = GetRandomBetween(1, 100) / 4000!
         circleWaves(i).c.r = GetRandomBetween(0, 128)
         circleWaves(i).c.g = GetRandomBetween(0, 128)
         circleWaves(i).c.b = GetRandomBetween(0, 128)
@@ -656,26 +679,26 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
 
     DIM i AS LONG: FOR i = U TO L STEP -1
         circleWaves(i).a = circleWaves(i).a + circleWaves(i).s
-        circleWaves(i).r = circleWaves(i).r + circleWaves(i).s * 10.0!
+        circleWaves(i).r = circleWaves(i).r + circleWaves(i).s * 10!
         circleWaves(i).p.x = circleWaves(i).p.x + circleWaves(i).v.x
         circleWaves(i).p.y = circleWaves(i).p.y + circleWaves(i).v.y
 
-        IF circleWaves(i).a >= 1.0! THEN circleWaves(i).s = circleWaves(i).s * -1
+        IF circleWaves(i).a >= 1! THEN circleWaves(i).s = circleWaves(i).s * -1!
 
-        IF circleWaves(i).a <= 0.0! THEN
-            circleWaves(i).a = 0.0!
+        IF circleWaves(i).a <= 0! THEN
+            circleWaves(i).a = 0!
             circleWaves(i).r = GetRandomBetween(10, 40)
             circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
             circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
-            circleWaves(i).v.x = (RND - RND) / 3.0!
-            circleWaves(i).v.y = (RND - RND) / 3.0!
-            circleWaves(i).s = GetRandomBetween(1, 100) / 4000.0!
+            circleWaves(i).v.x = (RND - RND) / 3!
+            circleWaves(i).v.y = (RND - RND) / 3!
+            circleWaves(i).s = GetRandomBetween(1, 100) / 4000!
             circleWaves(i).c.r = GetRandomBetween(0, 128)
             circleWaves(i).c.g = GetRandomBetween(0, 128)
             circleWaves(i).c.b = GetRandomBetween(0, 128)
         END IF
 
-        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255 * circleWaves(i).a)
+        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, RGB32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
     NEXT
 END SUB
 '-----------------------------------------------------------------------------------------------------------------------
@@ -683,11 +706,11 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 ' MODULE FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$INCLUDE:'include/Colors.bas'
+'$INCLUDE:'include/ColorOps.bas'
 '$INCLUDE:'include/ProgramArgs.bas'
 '$INCLUDE:'include/FileOps.bas'
 '$INCLUDE:'include/StringOps.bas'
-'$INCLUDE:'include/GfxEx.bas'
+'$INCLUDE:'include/GraphicOps.bas'
 '$INCLUDE:'include/MIDIPlayer.bas'
 '-----------------------------------------------------------------------------------------------------------------------
 '-----------------------------------------------------------------------------------------------------------------------
