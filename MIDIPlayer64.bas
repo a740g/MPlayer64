@@ -226,7 +226,7 @@ SUB DrawVisualization
 
     i = 0
     DO WHILE i < __MIDI_Player.soundBufferFrames
-        xp = 21 + (i * 598) \ __MIDI_Player.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
+        xp = 21 + (i * 599) \ __MIDI_Player.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
 
         yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i) * AmpBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
@@ -527,10 +527,11 @@ FUNCTION OnSelectedFiles%%
 
     DIM j AS LONG: j = TokenizeString(ofdList, "|", EMPTY_STRING, FALSE, fileNames())
 
-    DIM i AS LONG: FOR i = 0 TO j - 1
+    DIM i AS LONG: WHILE i < j
         e = OnPlayMIDITune(fileNames(i))
-        IF e <> EVENT_PLAY THEN EXIT FOR
-    NEXT
+        IF e <> EVENT_PLAY THEN EXIT WHILE
+        i = i + 1
+    WEND
 
     OnSelectedFiles = e
 END FUNCTION
