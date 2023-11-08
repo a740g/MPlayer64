@@ -7,7 +7,7 @@
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'include/BitwiseOps.bi'
-'$INCLUDE:'include/ColorOps.bi'
+'$INCLUDE:'include/GraphicOps.bi'
 '$INCLUDE:'include/FileOps.bi'
 '$INCLUDE:'include/StringOps.bi'
 '$INCLUDE:'include/MathOps.bi'
@@ -21,15 +21,15 @@
 $NOPREFIX
 $RESIZE:SMOOTH
 $EXEICON:'./MIDIPlayer64.ico'
-$VERSIONINFO:CompanyName=Samuel Gomes
-$VERSIONINFO:FileDescription=MIDI Player 64 executable
-$VERSIONINFO:InternalName=MIDIPlayer64
-$VERSIONINFO:LegalCopyright=Copyright (c) 2023, Samuel Gomes
-$VERSIONINFO:LegalTrademarks=All trademarks are property of their respective owners
-$VERSIONINFO:OriginalFilename=MIDIPlayer64.exe
-$VERSIONINFO:ProductName=MIDI Player 64
-$VERSIONINFO:Web=https://github.com/a740g
-$VERSIONINFO:Comments=https://github.com/a740g
+$VERSIONINFO:CompanyName='Samuel Gomes'
+$VERSIONINFO:FileDescription='MIDI Player 64 executable'
+$VERSIONINFO:InternalName='MIDIPlayer64'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2023, Samuel Gomes'
+$VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
+$VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
+$VERSIONINFO:ProductName='MIDI Player 64'
+$VERSIONINFO:Web='https://github.com/a740g'
+$VERSIONINFO:Comments='https://github.com/a740g'
 $VERSIONINFO:FILEVERSION#=2,2,0,0
 $VERSIONINFO:PRODUCTVERSION#=2,2,0,0
 '-----------------------------------------------------------------------------------------------------------------------
@@ -57,6 +57,7 @@ CONST CIRCLE_WAVE_COUNT = 32
 '-----------------------------------------------------------------------------------------------------------------------
 TYPE StarType
     p AS Vector3FType ' position
+    a AS SINGLE ' angle
     c AS UNSIGNED LONG ' color
 END TYPE
 
@@ -89,7 +90,7 @@ ACCEPTFILEDROP ' enable drag and drop of files
 SCREEN NEWIMAGE(640, 480, 32) ' use 640x480 resolution
 ALLOWFULLSCREEN SQUAREPIXELS , SMOOTH ' allow the user to press Alt+Enter to go fullscreen
 PRINTMODE KEEPBACKGROUND ' print without wiping out the background
-SetRandomSeed TIMER ' seed RNG
+Math_SetRandomSeed TIMER ' seed RNG
 DISPLAY ' only swap display buffer when we want
 AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackgroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
@@ -311,7 +312,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
 
     ' Reset absurd volume levels when using SoundFonts
-    IF NOT useFMSynth THEN MIDI_SetVolume MinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
+    IF NOT useFMSynth THEN MIDI_SetVolume Math_GetSingleMin(MIDI_GetVolume, MIDI_VOLUME_MAX)
 
     ' Kickstart playback
     MIDI_Play
@@ -614,39 +615,47 @@ END SUB
 
 
 SUB InitializeStars (stars() AS StarType)
+    CONST Z_DIVIDER = 4096!
+
     DIM L AS LONG: L = LBOUND(stars)
     DIM U AS LONG: U = UBOUND(stars)
     DIM W AS LONG: W = WIDTH
     DIM H AS LONG: H = HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
-        stars(i).p.x = GetRandomBetween(0, W - 1)
-        stars(i).p.y = GetRandomBetween(0, H - 1)
-        stars(i).p.z = 4096!
-        stars(i).c = ToBGRA(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
+        stars(i).p.x = Math_GetRandomBetween(0, W - 1)
+        stars(i).p.y = Math_GetRandomBetween(0, H - 1)
+        stars(i).p.z = Z_DIVIDER
+        stars(i).c = Graphics_MakeBGRA(Math_GetRandomBetween(64, 255), Math_GetRandomBetween(64, 255), Math_GetRandomBetween(64, 255), 255)
     NEXT
 END SUB
 
 
 SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
+    CONST Z_DIVIDER = 4096!
+
     DIM L AS LONG: L = LBOUND(stars)
     DIM U AS LONG: U = UBOUND(stars)
     DIM W AS LONG: W = WIDTH
     DIM H AS LONG: H = HEIGHT
+    DIM W_Half AS LONG: W_Half = W \ 2
+    DIM H_Half AS LONG: H_Half = H \ 2
 
     DIM i AS LONG: FOR i = L TO U
         IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
-            stars(i).p.x = GetRandomBetween(0, W - 1)
-            stars(i).p.y = GetRandomBetween(0, H - 1)
-            stars(i).p.z = 4096!
-            stars(i).c = ToBGRA(GetRandomBetween(64, 255), GetRandomBetween(64, 255), GetRandomBetween(64, 255), 255)
+            stars(i).p.x = Math_GetRandomBetween(0, W - 1)
+            stars(i).p.y = Math_GetRandomBetween(0, H - 1)
+            stars(i).p.z = Z_DIVIDER
+            stars(i).c = Graphics_MakeBGRA(Math_GetRandomBetween(64, 255), Math_GetRandomBetween(64, 255), Math_GetRandomBetween(64, 255), 255)
         END IF
 
-        PSET (stars(i).p.x, stars(i).p.y), stars(i).c
+        Graphics_DrawPixel stars(i).p.x, stars(i).p.y, stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - SHR(W, 1)) * (stars(i).p.z / 4096!)) + SHR(W, 1)
-        stars(i).p.y = ((stars(i).p.y - SHR(H, 1)) * (stars(i).p.z / 4096!)) + SHR(H, 1)
+        stars(i).a = stars(i).a + 0.01!
+        DIM zd AS SINGLE: zd = stars(i).p.z / Z_DIVIDER
+        stars(i).p.x = ((stars(i).p.x - W_Half) * zd) + W_Half + COS(stars(i).a * 0.5!)
+        stars(i).p.y = ((stars(i).p.y - H_Half) * zd) + H_Half + SIN(stars(i).a * 1.5!)
     NEXT
 END SUB
 
@@ -659,15 +668,15 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
 
     DIM i AS LONG: FOR i = L TO U
         circleWaves(i).a = 0!
-        circleWaves(i).r = GetRandomBetween(10, 40)
-        circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
-        circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
+        circleWaves(i).r = Math_GetRandomBetween(10, 40)
+        circleWaves(i).p.x = Math_GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
+        circleWaves(i).p.y = Math_GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
         circleWaves(i).v.x = (RND - RND) / 3!
         circleWaves(i).v.y = (RND - RND) / 3!
-        circleWaves(i).s = GetRandomBetween(1, 100) / 4000!
-        circleWaves(i).c.r = GetRandomBetween(0, 128)
-        circleWaves(i).c.g = GetRandomBetween(0, 128)
-        circleWaves(i).c.b = GetRandomBetween(0, 128)
+        circleWaves(i).s = Math_GetRandomBetween(1, 100) / 4000!
+        circleWaves(i).c.r = Math_GetRandomBetween(0, 128)
+        circleWaves(i).c.g = Math_GetRandomBetween(0, 128)
+        circleWaves(i).c.b = Math_GetRandomBetween(0, 128)
     NEXT
 END SUB
 
@@ -684,22 +693,23 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
         circleWaves(i).p.x = circleWaves(i).p.x + circleWaves(i).v.x
         circleWaves(i).p.y = circleWaves(i).p.y + circleWaves(i).v.y
 
-        IF circleWaves(i).a >= 1! THEN circleWaves(i).s = circleWaves(i).s * -1!
-
-        IF circleWaves(i).a <= 0! THEN
+        IF circleWaves(i).a >= 1! THEN
+            circleWaves(i).s = circleWaves(i).s * -1!
+            circleWaves(i).a = 1!
+        ELSEIF circleWaves(i).a <= 0! THEN
             circleWaves(i).a = 0!
-            circleWaves(i).r = GetRandomBetween(10, 40)
-            circleWaves(i).p.x = GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
-            circleWaves(i).p.y = GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
+            circleWaves(i).r = Math_GetRandomBetween(10, 40)
+            circleWaves(i).p.x = Math_GetRandomBetween(circleWaves(i).r, W - circleWaves(i).r)
+            circleWaves(i).p.y = Math_GetRandomBetween(circleWaves(i).r, H - circleWaves(i).r)
             circleWaves(i).v.x = (RND - RND) / 3!
             circleWaves(i).v.y = (RND - RND) / 3!
-            circleWaves(i).s = GetRandomBetween(1, 100) / 4000!
-            circleWaves(i).c.r = GetRandomBetween(0, 128)
-            circleWaves(i).c.g = GetRandomBetween(0, 128)
-            circleWaves(i).c.b = GetRandomBetween(0, 128)
+            circleWaves(i).s = Math_GetRandomBetween(1, 100) / 4000!
+            circleWaves(i).c.r = Math_GetRandomBetween(0, 128)
+            circleWaves(i).c.g = Math_GetRandomBetween(0, 128)
+            circleWaves(i).c.b = Math_GetRandomBetween(0, 128)
         END IF
 
-        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, RGB32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
+        Graphics_DrawFilledCircle circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, Graphics_MakeBGRA(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
     NEXT
 END SUB
 '-----------------------------------------------------------------------------------------------------------------------
@@ -707,7 +717,7 @@ END SUB
 '-----------------------------------------------------------------------------------------------------------------------
 ' MODULE FILES
 '-----------------------------------------------------------------------------------------------------------------------
-'$INCLUDE:'include/ColorOps.bas'
+'$INCLUDE:'include/GraphicOps.bas'
 '$INCLUDE:'include/ProgramArgs.bas'
 '$INCLUDE:'include/FileOps.bas'
 '$INCLUDE:'include/StringOps.bas'
