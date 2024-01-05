@@ -312,7 +312,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
 
     ' Reset absurd volume levels when using SoundFonts
-    IF NOT useFMSynth THEN MIDI_SetVolume Math_GetSingleMin(MIDI_GetVolume, MIDI_VOLUME_MAX)
+    IF NOT useFMSynth THEN MIDI_SetVolume Math_GetMinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
 
     ' Kickstart playback
     MIDI_Play
