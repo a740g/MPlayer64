@@ -173,10 +173,10 @@ SUB DrawVisualization
     ' Draw the tune info
     LOCATE 21, 49: PRINT "Buffered sound:"; FIX(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000); "ms";
     LOCATE 22, 57: PRINT "Voices:"; MIDI_GetActiveVoices;
-    LOCATE 23, 49: PRINT FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%")
-    LOCATE 24, 51: PRINT FormatLong((MIDI_GetCurrentTime + 500) \ 60000, "Elapsed time: %.2i"); FormatLong(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
-    LOCATE 25, 53: PRINT FormatLong((MIDI_GetTotalTime + 500) \ 60000, "Total time: %.2i"); FormatLong(((MIDI_GetTotalTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
-    LOCATE 26, 56: PRINT "Looping: "; FormatBoolean(MIDI_IsLooping, 4);
+    LOCATE 23, 49: PRINT String_FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%")
+    LOCATE 24, 51: PRINT String_FormatLong((MIDI_GetCurrentTime + 500) \ 60000, "Elapsed time: %.2i"); String_FormatLong(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
+    LOCATE 25, 53: PRINT String_FormatLong((MIDI_GetTotalTime + 500) \ 60000, "Total time: %.2i"); String_FormatLong(((MIDI_GetTotalTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
+    LOCATE 26, 56: PRINT "Looping: "; String_FormatBoolean(MIDI_IsLooping, 4);
 
     COLOR BGRA_CYAN
 
@@ -522,11 +522,11 @@ FUNCTION OnSelectedFiles%%
 
     ofdList = OPENFILEDIALOG$(APP_NAME, , "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
 
-    IF ofdList = EMPTY_STRING THEN EXIT FUNCTION
+    IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
     REDIM fileNames(0 TO 0) AS STRING
 
-    DIM j AS LONG: j = TokenizeString(ofdList, "|", EMPTY_STRING, FALSE, fileNames())
+    DIM j AS LONG: j = String_Tokenize(ofdList, "|", STRING_EMPTY, FALSE, fileNames())
 
     DIM i AS LONG: WHILE i < j
         e = OnPlayMIDITune(fileNames(i))
