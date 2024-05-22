@@ -4,8 +4,8 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player 
 
 - [TinySoundFont](https://github.com/schellingb/TinySoundFont) (a software synthesizer using SoundFont2)
 - [TinyMidiLoader](https://github.com/schellingb/TinySoundFont) (a minimalistic SMF parser)
-- [ymfm](https://github.com/aaronsgiles/ymfm) (a collection of Yamaha FM sound cores)
-- [ymfmidi](https://github.com/devinacker/ymfmidi) (a MIDI library based on the OPL3 emulation core from ymfm)
+- [Opal](https://www.3eality.com/productions/reality-adlib-tracker) (an OPL3 emulator that is part of the Reality Adlib Tracker public domain player code)
+- [ymfmidi](https://github.com/devinacker/ymfmidi) (a MIDI player based on the OPL3 emulation core from ymfm)
 
 ---
 ![Screenshot 1](screenshots/screenshot1.png)
@@ -26,7 +26,7 @@ This is a [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe) MIDI player 
 - Open Terminal and change to the directory using an appropriate OS command
 - Run `git submodule update --init --recursive` to initialize, fetch and checkout git submodules
 - Open *MIDIPlayer64.bas* in the QB64-PE IDE and press `F5` to compile and run
-- To use the library in your project add the [Toolbox64](https://github.com/a740g/Toolbox64) repositiory as a [Git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+- To use the library in your project add the [Toolbox64](https://github.com/a740g/Toolbox64) repository as a [Git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 
 ## API
 
@@ -50,7 +50,7 @@ Function MIDI_GetTotalTime#
 Function MIDI_GetCurrentTime#
 Function MIDI_GetActiveVoices~&
 Function MIDI_IsFMSynthesis%%
-Sub MIDI_Update (bufferTimeSecs As Single)
+Sub MIDI_Update
 ```
 
 ## NOTES
