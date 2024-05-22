@@ -1,6 +1,6 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' QB64-PE MIDI Player
-' Copyright (c) 2023 Samuel Gomes
+' Copyright (c) 2024 Samuel Gomes
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -24,21 +24,21 @@ $EXEICON:'./MIDIPlayer64.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
 $VERSIONINFO:FileDescription='MIDI Player 64 executable'
 $VERSIONINFO:InternalName='MIDIPlayer64'
-$VERSIONINFO:LegalCopyright='Copyright (c) 2023, Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2024, Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=2,2,0,0
-$VERSIONINFO:PRODUCTVERSION#=2,2,0,0
+$VERSIONINFO:FILEVERSION#=2,2,1,0
+$VERSIONINFO:PRODUCTVERSION#=2,2,1,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------------------------
 CONST APP_NAME = "MIDI Player 64"
-CONST FRAME_RATE_MAX = 120
+CONST FRAME_RATE_MAX& = 60&
 ' Program events
 CONST EVENT_NONE = 0 ' idle
 CONST EVENT_QUIT = 1 ' user wants to quit
@@ -46,10 +46,10 @@ CONST EVENT_CMDS = 2 ' process command line
 CONST EVENT_LOAD = 3 ' user want to load files
 CONST EVENT_DROP = 4 ' user dropped files
 CONST EVENT_PLAY = 5 ' play next song
-CONST EVENT_HTTP = 6 ' user wants to downloads and play random tunes from www.vgmusic.com
+CONST EVENT_HTTP = 6 ' user wants to downloads and play random tunes from www.bitmidi.com
 ' Background constants
-CONST STAR_COUNT = 512 ' the maximum stars that we can show
-CONST CIRCLE_WAVE_COUNT = 32
+CONST STAR_COUNT& = 512& ' the maximum stars that we can show
+CONST CIRCLE_WAVE_COUNT& = 32&
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ DO
             event = OnCommandLine
 
         CASE EVENT_HTTP
-            event = OnVGMArchiveFiles
+            event = OnBitMidiFiles
 
         CASE ELSE
             event = OnWelcomeScreen
@@ -320,7 +320,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     DIM k AS LONG
 
     DO
-        MIDI_Update MIDI_SOUND_BUFFER_TIME_DEFAULT
+        MIDI_Update
 
         DrawVisualization '  clears the screen and then draws all the fun stuff
 
@@ -426,7 +426,7 @@ FUNCTION OnWelcomeScreen%%
         COLOR BGRA_YELLOW
         PRINT " |                                                                            | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ............ ";: COLOR BGRA_MAGENTA: PRINT "MULTI-SELECT FILES";: COLOR BGRA_YELLOW: PRINT "                     | "
-        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F2";: COLOR BGRA_GRAY: PRINT " ......... ";: COLOR BGRA_MAGENTA: PRINT "PLAY FROM VGM ARCHIVE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F2";: COLOR BGRA_GRAY: PRINT " ............. ";: COLOR BGRA_MAGENTA: PRINT "PLAY FROM BITMIDI";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F6";: COLOR BGRA_GRAY: PRINT " ................ ";: COLOR BGRA_MAGENTA: PRINT "QUICKSAVE FILE";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "ESC";: COLOR BGRA_GRAY: PRINT " .................... ";: COLOR BGRA_MAGENTA: PRINT "NEXT/QUIT";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "SPC";: COLOR BGRA_GRAY: PRINT " ........................ ";: COLOR BGRA_MAGENTA: PRINT "PAUSE";: COLOR BGRA_YELLOW: PRINT "                     | "
@@ -538,33 +538,34 @@ FUNCTION OnSelectedFiles%%
 END FUNCTION
 
 
-' Loads and plays random MIDIs from vgmusic.com
-FUNCTION OnVGMArchiveFiles%%
+' Loads and plays random MIDIs from www.bitmidi.com
+FUNCTION OnBitMidiFiles%%
     DIM e AS BYTE: e = EVENT_NONE
     DIM modArchiveFileName AS STRING
 
     DO
-        modArchiveFileName = GetRandomVGMArchiveFileName
+        modArchiveFileName = GetRandomBitMidiFileName
 
         TITLE "Downloading: " + GetFileNameFromPathOrURL(modArchiveFileName) + " - " + APP_NAME
 
         e = OnPlayMIDITune(modArchiveFileName)
     LOOP WHILE e = EVENT_NONE OR e = EVENT_PLAY
 
-    OnVGMArchiveFiles = e
+    OnBitMidiFiles = e
 END FUNCTION
 
 
 ' Gets a random file URL from www.modarchive.org
-FUNCTION GetRandomVGMArchiveFileName$
-    DIM buffer AS STRING: buffer = LoadFileFromURL("https://www.vgmusic.com/cgi/random.cgi?random_button=Random+Song")
-    DIM bufPos AS LONG: bufPos = INSTR(buffer, "You are listening to:")
+FUNCTION GetRandomBitMidiFileName$
+    DIM buffer AS STRING: buffer = LoadFileFromURL("https://bitmidi.com/random")
+    DIM bufPos AS LONG: bufPos = INSTR(buffer, CHR$(KEY_QUOTATION_MARK) + "downloadUrl" + CHR$(KEY_QUOTATION_MARK))
 
     IF bufPos > 0 THEN
+        bufPos = bufPos + 13 ' skip "downloadUrl"
         bufPos = INSTR(bufPos, buffer, CHR$(KEY_QUOTATION_MARK)) ' find the position of the next quote
         IF bufPos > 0 THEN
             bufPos = bufPos + 1 ' skip the quote
-            GetRandomVGMArchiveFileName = MID$(buffer, bufPos, INSTR(bufPos, buffer, CHR$(KEY_QUOTATION_MARK)) - bufPos)
+            GetRandomBitMidiFileName = "https://bitmidi.com" + MID$(buffer, bufPos, INSTR(bufPos, buffer, CHR$(KEY_QUOTATION_MARK)) - bufPos)
         END IF
     END IF
 END FUNCTION
