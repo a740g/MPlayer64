@@ -171,9 +171,9 @@ SUB DrawVisualization
     IF MIDI_IsPaused OR NOT MIDI_IsPlaying THEN COLOR BGRA_ORANGERED ELSE COLOR BGRA_WHITE
 
     ' Draw the tune info
-    LOCATE 21, 49: PRINT "Buffered sound:"; FIX(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000); "ms";
-    LOCATE 22, 57: PRINT "Voices:"; MIDI_GetActiveVoices;
-    LOCATE 23, 49: PRINT String_FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%")
+    LOCATE 21, 49: PRINT String_FormatLong(INT(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000#), "Buffered sound: %3i ms");
+    LOCATE 22, 57: PRINT String_FormatLong(MIDI_GetActiveVoices, "Voices: %3i");
+    LOCATE 23, 49: PRINT String_FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%");
     LOCATE 24, 51: PRINT String_FormatLong((MIDI_GetCurrentTime + 500) \ 60000, "Elapsed time: %.2i"); String_FormatLong(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
     LOCATE 25, 53: PRINT String_FormatLong((MIDI_GetTotalTime + 500) \ 60000, "Total time: %.2i"); String_FormatLong(((MIDI_GetTotalTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
     LOCATE 26, 56: PRINT "Looping: "; String_FormatBoolean(MIDI_IsLooping, 4);
