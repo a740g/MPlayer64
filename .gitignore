@@ -10,3 +10,6 @@
 *.exe
 # Ignore VS Code stuff
 .vscode
+# Ignore macOS stuff
+.DS_Store
+*.command

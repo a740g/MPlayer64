@@ -163,7 +163,7 @@ SUB DrawVisualization
     SELECT CASE BackgroundType
         CASE 1
             ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
-            UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - power)
+            UpdateAndDrawStars Stars(), -8.0! * LOG(1.000001! - power)
         CASE 2
             UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
     END SELECT
