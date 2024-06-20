@@ -30,8 +30,8 @@ $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=2,2,1,0
-$VERSIONINFO:PRODUCTVERSION#=2,2,1,0
+$VERSIONINFO:FILEVERSION#=3,0,0,0
+$VERSIONINFO:PRODUCTVERSION#=3,0,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ SYSTEM
 ' FUNCTIONS & SUBROUTINES
 '-----------------------------------------------------------------------------------------------------------------------
 ' This closes and re-initialized the library
-' This is needed if we want to toggle between FM & Sample synth
+' This is needed if we want to toggle between FM & SF synth
 SUB RebootMIDILibrary
     MIDI_Finalize ' close the MIDI library if it was opened before
 
@@ -309,7 +309,9 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     REDIM AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerR(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
-    TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
+    DIM tuneTitle AS STRING: tuneTitle = MIDI_GetSongName
+    IF LEN(tuneTitle) = NULL THEN tuneTitle = GetFileNameFromPathOrURL(fileName)
+    _TITLE tuneTitle + " - " + APP_NAME
 
     ' Reset absurd volume levels when using SoundFonts
     IF NOT useFMSynth THEN MIDI_SetVolume Math_GetMinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
