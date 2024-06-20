@@ -50,6 +50,13 @@ CONST EVENT_HTTP = 6 ' user wants to downloads and play random tunes from www.bi
 ' Background constants
 CONST STAR_COUNT& = 512& ' the maximum stars that we can show
 CONST CIRCLE_WAVE_COUNT& = 32&
+$IF WINDOWS THEN
+    CONST MIDI_INSTRUMENT_BANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.sfogg|*.dll"
+    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xmi"
+$ELSE
+    CONST MIDI_INSTRUMENT_BANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.sfogg|*.Wopl|*.Op2|*.Tmb|*.Ad|*.Opl|*.Sf2|*.Sf3|*.Sfo|*.Sfogg|*.WOPL|*.OP2|*.TMB|*.AD|*.OPL|*.SF2|*.SF3|*.SFO|*.SFOGG"
+    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xmi|*.Mus|*.Hmi|*.Hmp|*.Hmq|*.Lds|*.Mds|*.Mids|*.Rcp|*.R36|*.G18|*.G36|*.Rmi|*.Mid|*.Midi|*.Xmi|*.MUS|*.HMI|*.HMP|*.HMQ|*.LDS|*.MDS|*.MIDS|*.RCP|*.R36|*.G18|*.G36|*.RMI|*.MID|*.MIDI|*.XMI"
+$END IF
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -75,7 +82,12 @@ END TYPE
 ' GLOBAL VARIABLES
 '-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED AS LONG AnalyzerType, BackgroundType, FreqFact, Magnification
-DIM SHARED AmpBoost AS SINGLE, useFMSynth AS BYTE
+DIM SHARED AmpBoost AS SINGLE
+$IF WINDOWS THEN
+    DIM SHARED SynthName(MIDI_SYNTH_OPAL TO MIDI_SYNTH_VSTI) AS STRING
+$ELSE
+    DIM SHARED SynthName(MIDI_SYNTH_OPAL TO MIDI_SYNTH_TINYSOUNDFONT) AS STRING
+$END IF
 REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO 0), SpectrumAnalyzerR(0 TO 0)
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
@@ -92,11 +104,27 @@ ALLOWFULLSCREEN SQUAREPIXELS , SMOOTH ' allow the user to press Alt+Enter to go 
 PRINTMODE KEEPBACKGROUND ' print without wiping out the background
 Math_SetRandomSeed TIMER ' seed RNG
 DISPLAY ' only swap display buffer when we want
+
 AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackgroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
 FreqFact = 2 ' frequency spectrum X-axis scale (powers of two only [2 - 8])
 Magnification = 5 ' frequency spectrum Y-axis scale (magnitude [3 - 7])
 AmpBoost = 1! ' oscillator amplitude (1.0 - 5.0)
+
+' Set the synth names
+SynthName(MIDI_SYNTH_OPAL) = "Opal"
+SynthName(MIDI_SYNTH_PRIMESYNTH) = "Primesynth"
+SynthName(MIDI_SYNTH_TINYSOUNDFONT) = "TinySoundFont"
+$IF WINDOWS THEN
+    SynthName(MIDI_SYNTH_VSTI) = "VSTi"
+$END IF
+
+' Initialize the MIDI Player library
+IF NOT MIDI_Initialize THEN
+    MESSAGEBOX APP_NAME, "Failed to initialize MIDI Player library!", "error"
+    SYSTEM 1
+END IF
+
 InitializeStars Stars()
 InitializeCircleWaves CircleWaves()
 
@@ -133,19 +161,6 @@ SYSTEM
 '-----------------------------------------------------------------------------------------------------------------------
 ' FUNCTIONS & SUBROUTINES
 '-----------------------------------------------------------------------------------------------------------------------
-' This closes and re-initialized the library
-' This is needed if we want to toggle between FM & SF synth
-SUB RebootMIDILibrary
-    MIDI_Finalize ' close the MIDI library if it was opened before
-
-    ' (Re-)Initialize the MIDI Player library
-    IF NOT MIDI_Initialize(useFMSynth) THEN
-        MESSAGEBOX APP_NAME, "Failed to initialize MIDI Player library!", "error"
-        SYSTEM 1
-    END IF
-END SUB
-
-
 ' Draws the screen during playback
 SUB DrawVisualization
     SHARED __MIDI_Player AS __MIDI_PlayerType
@@ -292,16 +307,12 @@ END SUB
 FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     SHARED __MIDI_Player AS __MIDI_PlayerType ' we are using this only to access the library internals to draw the analyzer
 
-    ' NOTE: we need to do this before playback else some TSF MIDI playback sounds like crap
-    ' TODO: I'll need to investigate the C side of things to find a proper solution
-    RebootMIDILibrary
-
     OnPlayMIDITune = EVENT_PLAY ' default event is to play next song
 
     DIM buffer AS STRING: buffer = LoadFile(fileName) ' load the whole file to memory
 
     IF NOT MIDI_LoadTuneFromMemory(buffer) THEN
-        MESSAGEBOX APP_NAME, "Failed to load: " + fileName, "error"
+        MESSAGEBOX APP_NAME, "Failed to load: " + fileName + CHR$(10) + "The MIDI file or the MIDI instrument bank is corrupt.", "error"
         EXIT FUNCTION
     END IF
 
@@ -314,7 +325,8 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     _TITLE tuneTitle + " - " + APP_NAME
 
     ' Reset absurd volume levels when using SoundFonts
-    IF NOT useFMSynth THEN MIDI_SetVolume Math_GetMinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
+    ' TODO: Check if this is still needed
+    IF MIDI_GetSynthType = MIDI_SYNTH_TINYSOUNDFONT THEN MIDI_SetVolume Math_GetMinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
 
     ' Kickstart playback
     MIDI_Play
@@ -333,7 +345,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
                 MIDI_Pause NOT MIDI_IsPaused
 
             CASE KEY_PLUS, KEY_EQUALS ' volume up
-                IF MIDI_GetVolume < MIDI_VOLUME_MAX + -useFMSynth * MIDI_VOLUME_MAX THEN MIDI_SetVolume MIDI_GetVolume + 0.01! ' allow boosting volume when FM is used
+                IF MIDI_GetVolume < MIDI_VOLUME_MAX THEN MIDI_SetVolume MIDI_GetVolume + 0.01!
 
             CASE KEY_MINUS, KEY_UNDERSCORE ' volume down
                 IF MIDI_GetVolume > MIDI_VOLUME_MIN THEN MIDI_SetVolume MIDI_GetVolume - 0.01!
@@ -437,7 +449,7 @@ FUNCTION OnWelcomeScreen%%
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "L|l";: COLOR BGRA_GRAY: PRINT " ......................... ";: COLOR BGRA_MAGENTA: PRINT "LOOP";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " .......... ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE ANALYZER TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ........ ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE BACKGROUND TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
-        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F|f";: COLOR BGRA_GRAY: PRINT " ............. ";: COLOR BGRA_MAGENTA: PRINT "FM SYNTHESIS ["; CHR$(78 + (-useFMSynth * 11)); "]";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "S|s";: COLOR BGRA_GRAY: PRINT " ....... ";: COLOR BGRA_MAGENTA: PRINT USING "SYNTH: [\           \]"; SynthName(MIDI_GetSynthType);: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                                                                            | "
         PRINT " |                                                                            | "
         PRINT " |                                                                            | "
@@ -458,9 +470,9 @@ FUNCTION OnWelcomeScreen%%
             e = EVENT_LOAD
         ELSEIF k = KEY_F2 THEN
             e = EVENT_HTTP
-        ELSEIF k = KEY_UPPER_F OR k = KEY_LOWER_F THEN
-            useFMSynth = NOT useFMSynth
-            RebootMIDILibrary ' kickstart the MIDI Player library with new settings
+        ELSEIF k = KEY_UPPER_S OR k = KEY_LOWER_S THEN
+            DIM bankFileName AS STRING: bankFileName = _OPENFILEDIALOG$(APP_NAME + ": Select MIDI Instrument Bank", , MIDI_INSTRUMENT_BANK_FILE_FILTERS)
+            IF LEN(bankFileName) > NULL THEN MIDI_SetSynth bankFileName, NULL
         END IF
 
         DISPLAY ' flip the framebuffer
@@ -477,11 +489,11 @@ FUNCTION OnCommandLine%%
     DIM e AS BYTE: e = EVENT_NONE
 
     IF GetProgramArgumentIndex(KEY_QUESTION_MARK) > 0 THEN
-        MessageBox APP_NAME, APP_NAME + String$(2, KEY_ENTER) + _
-        "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + Chr$(KEY_ENTER) + _
-        "    -?: Shows this message" + String$(2, KEY_ENTER) + _
-        "Copyright (c) 2023, Samuel Gomes" + String$(2, KEY_ENTER) + _
-        "https://github.com/a740g/", "info"
+    MessageBox APP_NAME, APP_NAME + String$(2, KEY_ENTER) + _
+    "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + Chr$(KEY_ENTER) + _
+    "    -?: Shows this message" + String$(2, KEY_ENTER) + _
+    "Copyright (c) 2023, Samuel Gomes" + String$(2, KEY_ENTER) + _
+    "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
     ELSE
@@ -522,7 +534,7 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS BYTE: e = EVENT_NONE
 
-    ofdList = OPENFILEDIALOG$(APP_NAME, , "*.mid|*.MID|*.Mid|*.midi|*.MIDI|*.Midi", "Standard MIDI Files", TRUE)
+    ofdList = OPENFILEDIALOG$(APP_NAME, , MIDI_FILE_FILTERS, , TRUE)
 
     IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
