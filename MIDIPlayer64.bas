@@ -18,7 +18,6 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------------------------
-$NOPREFIX
 $RESIZE:SMOOTH
 $EXEICON:'./MIDIPlayer64.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
@@ -30,8 +29,8 @@ $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=3,0,0,0
-$VERSIONINFO:PRODUCTVERSION#=3,0,0,0
+$VERSIONINFO:FILEVERSION#=3,1,0,0
+$VERSIONINFO:PRODUCTVERSION#=3,1,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -65,7 +64,7 @@ $END IF
 TYPE StarType
     p AS Vector3FType ' position
     a AS SINGLE ' angle
-    c AS UNSIGNED LONG ' color
+    c AS _UNSIGNED LONG ' color
 END TYPE
 
 TYPE CircleWaveType
@@ -88,7 +87,7 @@ $IF WINDOWS THEN
 $ELSE
     DIM SHARED SynthName(MIDI_SYNTH_OPAL TO MIDI_SYNTH_TINYSOUNDFONT) AS STRING
 $END IF
-REDIM SHARED AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO 0), SpectrumAnalyzerR(0 TO 0)
+REDIM SHARED AS _UNSIGNED INTEGER SpectrumAnalyzerL(0 TO 0), SpectrumAnalyzerR(0 TO 0)
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
@@ -96,14 +95,14 @@ DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT
 '-----------------------------------------------------------------------------------------------------------------------
-TITLE APP_NAME + " " + OS$ ' set the program name in the titlebar
-CHDIR STARTDIR$ ' change to the directory specifed by the environment
-ACCEPTFILEDROP ' enable drag and drop of files
-SCREEN NEWIMAGE(640, 480, 32) ' use 640x480 resolution
-ALLOWFULLSCREEN SQUAREPIXELS , SMOOTH ' allow the user to press Alt+Enter to go fullscreen
-PRINTMODE KEEPBACKGROUND ' print without wiping out the background
+_TITLE APP_NAME + " " + _OS$ ' set the program name in the titlebar
+CHDIR _STARTDIR$ ' change to the directory specifed by the environment
+_ACCEPTFILEDROP ' enable drag and drop of files
+SCREEN _NEWIMAGE(640, 480, 32) ' use 640x480 resolution
+_ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH ' allow the user to press Alt+Enter to go fullscreen
+_PRINTMODE _KEEPBACKGROUND ' print without wiping out the background
 Math_SetRandomSeed TIMER ' seed RNG
-DISPLAY ' only swap display buffer when we want
+_DISPLAY ' only swap display buffer when we want
 
 AnalyzerType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackgroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
@@ -121,14 +120,14 @@ $END IF
 
 ' Initialize the MIDI Player library
 IF NOT MIDI_Initialize THEN
-    MESSAGEBOX APP_NAME, "Failed to initialize MIDI Player library!", "error"
+    _MESSAGEBOX APP_NAME, "Failed to initialize MIDI Player library!", "error"
     SYSTEM 1
 END IF
 
 InitializeStars Stars()
 InitializeCircleWaves CircleWaves()
 
-DIM event AS BYTE: event = EVENT_CMDS ' default to command line event first
+DIM event AS _BYTE: event = EVENT_CMDS ' default to command line event first
 
 ' Main loop
 DO
@@ -153,7 +152,7 @@ DO
     END SELECT
 LOOP UNTIL event = EVENT_QUIT
 
-AUTODISPLAY
+_AUTODISPLAY
 MIDI_Finalize
 SYSTEM
 '-----------------------------------------------------------------------------------------------------------------------
@@ -170,23 +169,22 @@ SUB DrawVisualization
 
     ' Do FFT and calculate power for both left and right channel
     DIM AS SINGLE power
-    power = (AnalyzerFFTSingle(SpectrumAnalyzerL(0), __MIDI_SoundBuffer(0), 2, fftBits) + AnalyzerFFTSingle(SpectrumAnalyzerR(0), __MIDI_SoundBuffer(1), 2, fftBits)) / 2!
+    power = AnalyzerFFTSingle(SpectrumAnalyzerL(0), __MIDI_SoundBuffer(0), 2, fftBits) + AnalyzerFFTSingle(SpectrumAnalyzerR(0), __MIDI_SoundBuffer(1), 2, fftBits)
 
     CLS , BGRA_BLACK ' clear the framebuffer to black color
 
     ' Draw the background
     SELECT CASE BackgroundType
         CASE 1
-            ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
-            UpdateAndDrawStars Stars(), -8.0! * LOG(1.000001! - power)
+            UpdateAndDrawStars Stars(), 16! * ABS(power)
         CASE 2
-            UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
+            UpdateAndDrawCircleWaves CircleWaves(), 8! * power / 2!
     END SELECT
 
     IF MIDI_IsPaused OR NOT MIDI_IsPlaying THEN COLOR BGRA_ORANGERED ELSE COLOR BGRA_WHITE
 
     ' Draw the tune info
-    LOCATE 21, 49: PRINT String_FormatLong(INT(SNDRAWLEN(__MIDI_Player.soundHandle) * 1000#), "Buffered sound: %3i ms");
+    LOCATE 21, 49: PRINT String_FormatLong(INT(_SNDRAWLEN(__MIDI_Player.soundHandle) * 1000#), "Buffered sound: %3i ms");
     LOCATE 22, 57: PRINT String_FormatLong(MIDI_GetActiveVoices, "Voices: %3i");
     LOCATE 23, 49: PRINT String_FormatLong(MIDI_GetVolume * 100, "Current volume: %i%%");
     LOCATE 24, 51: PRINT String_FormatLong((MIDI_GetCurrentTime + 500) \ 60000, "Elapsed time: %.2i"); String_FormatLong(((MIDI_GetCurrentTime + 500) \ 1000) MOD 60, ":%.2i (mm:ss)");
@@ -212,7 +210,7 @@ SUB DrawVisualization
     LOCATE 29, 4: PRINT "L|l - LOOP";
 
     DIM AS LONG i, xp, yp
-    DIM text AS STRING, c AS UNSIGNED LONG
+    DIM text AS STRING, c AS _UNSIGNED LONG
 
     ON AnalyzerType GOSUB DrawOscillators, DrawFFT
 
@@ -220,7 +218,7 @@ SUB DrawVisualization
     LINE (20, 48)-(620, 144), BGRA_WHITE, B
     LINE (20, 176)-(620, 272), BGRA_WHITE, B
 
-    DISPLAY ' flip the frambuffer
+    _DISPLAY ' flip the frambuffer
 
     EXIT SUB
 
@@ -235,7 +233,7 @@ SUB DrawVisualization
     COLOR BGRA_LIME
     LOCATE 3, 3: PRINT "0 [ms]";
     LOCATE 11, 3: PRINT "0 [ms]";
-    text = STR$((__MIDI_Player.soundBufferFrames * 1000~&) \ SNDRATE) + " [ms]"
+    text = STR$((__MIDI_Player.soundBufferFrames * 1000~&) \ _SNDRATE) + " [ms]"
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
@@ -247,12 +245,12 @@ SUB DrawVisualization
         yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i) * AmpBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 96 ELSE yp = yp + 96 ' 96 = y_start, 47 = oscillator_height
-        LINE (xp, 96)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
+        LINE (xp, 96)-(xp, yp), _RGBA32(c, 255 - c, 0, 255)
 
         yp = __MIDI_SoundBuffer(__MIDI_SOUND_BUFFER_CHANNELS * i + 1) * AmpBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
-        LINE (xp, 224)-(xp, yp), RGBA32(c, 255 - c, 0, 255)
+        LINE (xp, 224)-(xp, yp), _RGBA32(c, 255 - c, 0, 255)
 
         i = i + 1
     LOOP
@@ -269,30 +267,30 @@ SUB DrawVisualization
     LOCATE 3, 23: PRINT "Left channel (frequency spectrum)";
     LOCATE 11, 23: PRINT "Right channel (frequency spectrum)";
     COLOR BGRA_LIME
-    text = STR$(SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
+    text = STR$(_SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
     LOCATE 3, 2: PRINT text;
     LOCATE 11, 2: PRINT text;
     DIM freqMax AS LONG: freqMax = __MIDI_Player.soundBufferFrames \ FreqFact
-    text = STR$(freqMax * SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
+    text = STR$(freqMax * _SNDRATE \ __MIDI_Player.soundBufferFrames) + " [Hz]"
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
 
-    DIM barWidth AS LONG: barWidth = SHR(FreqFact, 1): i = 0
+    DIM barWidth AS LONG: barWidth = _SHR(FreqFact, 1): i = 0
     DO WHILE i < freqMax
         xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
 
         ' Draw the left one first
-        yp = SHR(SpectrumAnalyzerL(i), Magnification)
+        yp = _SHR(SpectrumAnalyzerL(i), Magnification)
         IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
         c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
-        LINE (xp, 143)-(xp + barWidth, yp), RGBA32(c, 255 - c, 0, 255), BF
+        LINE (xp, 143)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
 
         ' Then the right one
-        yp = SHR(SpectrumAnalyzerR(i), Magnification)
+        yp = _SHR(SpectrumAnalyzerR(i), Magnification)
         IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
         c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
-        LINE (xp, 271)-(xp + barWidth, yp), RGBA32(c, 255 - c, 0, 255), BF
+        LINE (xp, 271)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
 
         i = i + 1
     LOOP
@@ -312,21 +310,17 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
     DIM buffer AS STRING: buffer = LoadFile(fileName) ' load the whole file to memory
 
     IF NOT MIDI_LoadTuneFromMemory(buffer) THEN
-        MESSAGEBOX APP_NAME, "Failed to load: " + fileName + CHR$(10) + "The MIDI file or the MIDI instrument bank is corrupt.", "error"
+        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName + STRING$(2, STRING_LF) + "The MIDI file or the MIDI instrument bank may be corrupt.", "error"
         EXIT FUNCTION
     END IF
 
     ' Setup the FFT arrays
-    REDIM AS UNSIGNED INTEGER SpectrumAnalyzerL(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerR(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
+    REDIM AS _UNSIGNED INTEGER SpectrumAnalyzerL(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1), SpectrumAnalyzerR(0 TO __MIDI_Player.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
     DIM tuneTitle AS STRING: tuneTitle = MIDI_GetSongName
     IF LEN(tuneTitle) = NULL THEN tuneTitle = GetFileNameFromPathOrURL(fileName)
     _TITLE tuneTitle + " - " + APP_NAME
-
-    ' Reset absurd volume levels when using SoundFonts
-    ' TODO: Check if this is still needed
-    IF MIDI_GetSynthType = MIDI_SYNTH_TINYSOUNDFONT THEN MIDI_SetVolume Math_GetMinSingle(MIDI_GetVolume, MIDI_VOLUME_MAX)
 
     ' Kickstart playback
     MIDI_Play
@@ -338,7 +332,7 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
 
         DrawVisualization '  clears the screen and then draws all the fun stuff
 
-        k = KEYHIT
+        k = _KEYHIT
 
         SELECT CASE k
             CASE KEY_SPACE ' toggle pause
@@ -386,33 +380,33 @@ FUNCTION OnPlayMIDITune%% (fileName AS STRING)
 
             CASE 21248 ' shift + delete - you know what this does :)
                 IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
-                    MESSAGEBOX APP_NAME, "You cannot delete " + fileName + "!", "error"
+                    _MESSAGEBOX APP_NAME, "You cannot delete " + fileName + "!", "error"
                 ELSE
-                    IF MESSAGEBOX(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 THEN
+                    IF _MESSAGEBOX(APP_NAME, "Are you sure you want to delete " + fileName + " permanently?", "yesno", "question", 0) = 1 THEN
                         KILL fileName
                         EXIT DO
                     END IF
                 END IF
         END SELECT
 
-        IF TOTALDROPPEDFILES > 0 THEN
+        IF _TOTALDROPPEDFILES > 0 THEN
             OnPlayMIDITune = EVENT_DROP
             EXIT DO
         END IF
 
-        LIMIT FRAME_RATE_MAX
+        _LIMIT FRAME_RATE_MAX
     LOOP UNTIL NOT MIDI_IsPlaying OR k = KEY_ESCAPE
 
     MIDI_Stop
 
-    TITLE APP_NAME + " " + OS$ ' Set app title to the way it was
+    _TITLE APP_NAME + " " + _OS$ ' Set app title to the way it was
 END FUNCTION
 
 
 ' Welcome screen loop
 FUNCTION OnWelcomeScreen%%
     DIM k AS LONG
-    DIM e AS BYTE: e = EVENT_NONE
+    DIM e AS _BYTE: e = EVENT_NONE
 
     DO
         CLS , BGRA_BLACK ' clear the framebuffer to black color
@@ -460,11 +454,11 @@ FUNCTION OnWelcomeScreen%%
         PRINT "_|_                                                                          _|_"
         PRINT " `/__________________________________________________________________________\' ";
 
-        k = KEYHIT
+        k = _KEYHIT
 
         IF k = KEY_ESCAPE THEN
             e = EVENT_QUIT
-        ELSEIF TOTALDROPPEDFILES > 0 THEN
+        ELSEIF _TOTALDROPPEDFILES > 0 THEN
             e = EVENT_DROP
         ELSEIF k = KEY_F1 THEN
             e = EVENT_LOAD
@@ -475,9 +469,9 @@ FUNCTION OnWelcomeScreen%%
             IF LEN(bankFileName) > NULL THEN MIDI_SetSynth bankFileName, NULL
         END IF
 
-        DISPLAY ' flip the framebuffer
+        _DISPLAY ' flip the framebuffer
 
-        LIMIT FRAME_RATE_MAX
+        _LIMIT FRAME_RATE_MAX
     LOOP WHILE e = EVENT_NONE
 
     OnWelcomeScreen = e
@@ -486,18 +480,14 @@ END FUNCTION
 
 ' Processes the command line one file at a time
 FUNCTION OnCommandLine%%
-    DIM e AS BYTE: e = EVENT_NONE
+    DIM e AS _BYTE: e = EVENT_NONE
 
     IF GetProgramArgumentIndex(KEY_QUESTION_MARK) > 0 THEN
-    MessageBox APP_NAME, APP_NAME + String$(2, KEY_ENTER) + _
-    "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + Chr$(KEY_ENTER) + _
-    "    -?: Shows this message" + String$(2, KEY_ENTER) + _
-    "Copyright (c) 2023, Samuel Gomes" + String$(2, KEY_ENTER) + _
-    "https://github.com/a740g/", "info"
+        _MESSAGEBOX APP_NAME, APP_NAME + STRING$(2, KEY_ENTER) + "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + CHR$(KEY_ENTER) + "    -?: Shows this message" + STRING$(2, KEY_ENTER) + "Copyright (c) 2023, Samuel Gomes" + STRING$(2, KEY_ENTER) + "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
     ELSE
-        DIM i AS LONG: FOR i = 1 TO COMMANDCOUNT
+        DIM i AS LONG: FOR i = 1 TO _COMMANDCOUNT
             e = OnPlayMIDITune(COMMAND$(i))
             IF e <> EVENT_PLAY THEN EXIT FOR
         NEXT
@@ -510,14 +500,14 @@ END FUNCTION
 ' Processes dropped files one file at a time
 FUNCTION OnDroppedFiles%%
     ' Make a copy of the dropped file and clear the list
-    REDIM fileNames(1 TO TOTALDROPPEDFILES) AS STRING
+    REDIM fileNames(1 TO _TOTALDROPPEDFILES) AS STRING
 
-    DIM e AS BYTE: e = EVENT_NONE
+    DIM e AS _BYTE: e = EVENT_NONE
 
-    DIM i AS LONG: FOR i = 1 TO TOTALDROPPEDFILES
-        fileNames(i) = DROPPEDFILE(i)
+    DIM i AS LONG: FOR i = 1 TO _TOTALDROPPEDFILES
+        fileNames(i) = _DROPPEDFILE(i)
     NEXT
-    FINISHDROP ' this is critical
+    _FINISHDROP ' this is critical
 
     ' Now play the dropped file one at a time
     FOR i = LBOUND(fileNames) TO UBOUND(fileNames)
@@ -532,9 +522,9 @@ END FUNCTION
 ' Processes a list of files selected by the user
 FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
-    DIM e AS BYTE: e = EVENT_NONE
+    DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = OPENFILEDIALOG$(APP_NAME, , MIDI_FILE_FILTERS, , TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , MIDI_FILE_FILTERS, , TRUE)
 
     IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
@@ -554,13 +544,13 @@ END FUNCTION
 
 ' Loads and plays random MIDIs from www.bitmidi.com
 FUNCTION OnBitMidiFiles%%
-    DIM e AS BYTE: e = EVENT_NONE
+    DIM e AS _BYTE: e = EVENT_NONE
     DIM modArchiveFileName AS STRING
 
     DO
         modArchiveFileName = GetRandomBitMidiFileName
 
-        TITLE "Downloading: " + GetFileNameFromPathOrURL(modArchiveFileName) + " - " + APP_NAME
+        _TITLE "Downloading: " + GetFileNameFromPathOrURL(modArchiveFileName) + " - " + APP_NAME
 
         e = OnPlayMIDITune(modArchiveFileName)
     LOOP WHILE e = EVENT_NONE OR e = EVENT_PLAY
@@ -587,12 +577,12 @@ END FUNCTION
 
 ' Saves a file loaded from the internet
 SUB QuickSave (buffer AS STRING, fileName AS STRING)
-    STATIC savePath AS STRING, alwaysUseSamePath AS BYTE, stopNagging AS BYTE
+    STATIC savePath AS STRING, alwaysUseSamePath AS _BYTE, stopNagging AS _BYTE
 
     IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
         ' This is a file from the web
-        IF NOT DIREXISTS(savePath) OR NOT alwaysUseSamePath THEN ' only get the path if path does not exist or user wants to use a new path
-            savePath = SELECTFOLDERDIALOG$("Select a folder to save the file:", savePath)
+        IF NOT _DIREXISTS(savePath) OR NOT alwaysUseSamePath THEN ' only get the path if path does not exist or user wants to use a new path
+            savePath = _SELECTFOLDERDIALOG$("Select a folder to save the file:", savePath)
             IF savePath = "" THEN EXIT SUB ' exit if user cancelled
 
             savePath = FixPathDirectoryName(savePath)
@@ -600,20 +590,20 @@ SUB QuickSave (buffer AS STRING, fileName AS STRING)
 
         DIM saveFileName AS STRING: saveFileName = savePath + GetLegalFileName(GetFileNameFromPathOrURL(fileName))
 
-        IF FILEEXISTS(saveFileName) THEN
-            IF MESSAGEBOX(APP_NAME, "Overwrite " + saveFileName + "?", "yesno", "warning", 0) = 0 THEN EXIT SUB
+        IF _FILEEXISTS(saveFileName) THEN
+            IF _MESSAGEBOX(APP_NAME, "Overwrite " + saveFileName + "?", "yesno", "warning", 0) = 0 THEN EXIT SUB
         END IF
 
         IF SaveFile(buffer, saveFileName, TRUE) THEN
-            MESSAGEBOX APP_NAME, saveFileName + " saved.", "info"
+            _MESSAGEBOX APP_NAME, saveFileName + " saved.", "info"
         ELSE
-            MESSAGEBOX APP_NAME, "Failed to save: " + saveFileName, "warning"
+            _MESSAGEBOX APP_NAME, "Failed to save: " + saveFileName, "warning"
             EXIT SUB
         END IF
 
         ' Check if user want to use the same path in the future
         IF NOT stopNagging THEN
-            SELECT CASE MESSAGEBOX(APP_NAME, "Do you want to use " + savePath + " for future saves?", "yesnocancel", "question", 1)
+            SELECT CASE _MESSAGEBOX(APP_NAME, "Do you want to use " + savePath + " for future saves?", "yesnocancel", "question", 1)
                 CASE 0
                     stopNagging = TRUE
                 CASE 1
@@ -624,7 +614,7 @@ SUB QuickSave (buffer AS STRING, fileName AS STRING)
         END IF
     ELSE
         ' This is a local file - do nothing
-        MESSAGEBOX APP_NAME, "You cannot save local file " + fileName + "!", "error"
+        _MESSAGEBOX APP_NAME, "You cannot save local file " + fileName + "!", "error"
     END IF
 END SUB
 
@@ -634,8 +624,8 @@ SUB InitializeStars (stars() AS StarType)
 
     DIM L AS LONG: L = LBOUND(stars)
     DIM U AS LONG: U = UBOUND(stars)
-    DIM W AS LONG: W = WIDTH
-    DIM H AS LONG: H = HEIGHT
+    DIM W AS LONG: W = _WIDTH
+    DIM H AS LONG: H = _HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
         stars(i).p.x = Math_GetRandomBetween(0, W - 1)
@@ -651,8 +641,8 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
 
     DIM L AS LONG: L = LBOUND(stars)
     DIM U AS LONG: U = UBOUND(stars)
-    DIM W AS LONG: W = WIDTH
-    DIM H AS LONG: H = HEIGHT
+    DIM W AS LONG: W = _WIDTH
+    DIM H AS LONG: H = _HEIGHT
     DIM W_Half AS LONG: W_Half = W \ 2
     DIM H_Half AS LONG: H_Half = H \ 2
 
@@ -678,8 +668,8 @@ END SUB
 SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
     DIM L AS LONG: L = LBOUND(circleWaves)
     DIM U AS LONG: U = UBOUND(circleWaves)
-    DIM W AS LONG: W = WIDTH
-    DIM H AS LONG: H = HEIGHT
+    DIM W AS LONG: W = _WIDTH
+    DIM H AS LONG: H = _HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
         circleWaves(i).a = 0!
@@ -699,8 +689,8 @@ END SUB
 SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
     DIM L AS LONG: L = LBOUND(circleWaves)
     DIM U AS LONG: U = UBOUND(circleWaves)
-    DIM W AS LONG: W = WIDTH
-    DIM H AS LONG: H = HEIGHT
+    DIM W AS LONG: W = _WIDTH
+    DIM H AS LONG: H = _HEIGHT
 
     DIM i AS LONG: FOR i = U TO L STEP -1
         circleWaves(i).a = circleWaves(i).a + circleWaves(i).s
