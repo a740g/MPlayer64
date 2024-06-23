@@ -8,6 +8,8 @@
 !include
 # Ignore all exe files
 *.exe
+!midis/vsthost32.exe
+!midis/vsthost64.exe
 # Ignore VS Code stuff
 .vscode
 # Ignore macOS stuff
