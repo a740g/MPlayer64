@@ -51,10 +51,10 @@ CONST STAR_COUNT& = 512& ' the maximum stars that we can show
 CONST CIRCLE_WAVE_COUNT& = 32&
 $IF WINDOWS THEN
     CONST MIDI_INSTRUMENT_BANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.sfogg|*.dll"
-    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xmi"
+    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xfm|*.xmi"
 $ELSE
-    CONST MIDI_INSTRUMENT_BANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.sfogg|*.Wopl|*.Op2|*.Tmb|*.Ad|*.Opl|*.Sf2|*.Sf3|*.Sfo|*.Sfogg|*.WOPL|*.OP2|*.TMB|*.AD|*.OPL|*.SF2|*.SF3|*.SFO|*.SFOGG"
-    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xmi|*.Mus|*.Hmi|*.Hmp|*.Hmq|*.Lds|*.Mds|*.Mids|*.Rcp|*.R36|*.G18|*.G36|*.Rmi|*.Mid|*.Midi|*.Xmi|*.MUS|*.HMI|*.HMP|*.HMQ|*.LDS|*.MDS|*.MIDS|*.RCP|*.R36|*.G18|*.G36|*.RMI|*.MID|*.MIDI|*.XMI"
+    CONST MIDI_INSTRUMENT_BANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.sfogg|*.WOPL|*.OP2|*.TMB|*.AD|*.OPL|*.SF2|*.SF3|*.SFO|*.SFOGG"
+    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xfm|*.xmi|*.MUS|*.HMI|*.HMP|*.HMQ|*.KAR|*.LDS|*.MDS|*.MIDS|*.RCP|*.R36|*.G18|*.G36|*.RMI|*.MID|*.MIDI|*.XFM|*.XMI"
 $END IF
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -441,8 +441,8 @@ FUNCTION OnWelcomeScreen%%
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "=|+";: COLOR BGRA_GRAY: PRINT " .............. ";: COLOR BGRA_MAGENTA: PRINT "INCREASE VOLUME";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "-|_";: COLOR BGRA_GRAY: PRINT " .............. ";: COLOR BGRA_MAGENTA: PRINT "DECREASE VOLUME";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "L|l";: COLOR BGRA_GRAY: PRINT " ......................... ";: COLOR BGRA_MAGENTA: PRINT "LOOP";: COLOR BGRA_YELLOW: PRINT "                     | "
-        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " .......... ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE ANALYZER TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
-        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ........ ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE BACKGROUND TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "O/o";: COLOR BGRA_GRAY: PRINT " ......... ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE ANALYZER TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
+        PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "B/b";: COLOR BGRA_GRAY: PRINT " ....... ";: COLOR BGRA_MAGENTA: PRINT "TOGGLE BACKGROUND TYPE";: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                     ";: COLOR BGRA_CYAN: PRINT "S|s";: COLOR BGRA_GRAY: PRINT " ....... ";: COLOR BGRA_MAGENTA: PRINT USING "SYNTH: [\           \]"; SynthName(MIDI_GetSynthType);: COLOR BGRA_YELLOW: PRINT "                     | "
         PRINT " |                                                                            | "
         PRINT " |                                                                            | "

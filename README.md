@@ -8,7 +8,7 @@ This is a [QB64-PE](https://www.qb64phoenix.com/) MIDI player and library based 
 - [primesynth](https://github.com/mosmeh/primesynth) (heavily modified)
 - [stb_vorbis](https://github.com/nothings/stb)
 - [TinySoundFont](https://github.com/schellingb/TinySoundFont)
-- [ymfmidi](https://github.com/devinacker/ymfmidi) (heavily modified to work with `Opal`)
+- [ymfmidi](https://github.com/devinacker/ymfmidi) (heavily modified to work with **Opal**)
 
 ---
 
@@ -18,12 +18,13 @@ This is a [QB64-PE](https://www.qb64phoenix.com/) MIDI player and library based 
 
 ## FEATURES
 
+- Multiple synthesizers: **Opal + ymfmidi, primesynth, TinySoundFont & VSTi**
+- Multiple MIDI file formats: **MUS, HMI, HMP, HMQ, KAR, LDS, MDS, MIDS, RCP, R36, G18, G36, RMI, MID, MIDI, XFM, XMI**
+- Multiple instrument bank formats: **WOPL, OP2, TMB, AD, OPL, SF2, SF3, SFO, SFOGG**
 - Easy plug-&-play API optimized for demos & games
 - Works on Windows, Linux & macOS (VSTi player is only available on Windows)
 - Everything is statically linked (no shared library dependency)
 - Demo player that shows how to use the library
-- Multiple synthesizers: `Opal + ymfmidi`, `primesynth`, `TinySoundFont` & `VSTi`
-- Supports MUS, HMI, HMP, HMQ, KAR, LDS, MDS, MIDS, RCP, R36, G18, G36, RMI, MID, MIDI, XFM, XMI file formats
 
 ## USAGE
 
