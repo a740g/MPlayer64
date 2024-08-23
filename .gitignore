@@ -15,3 +15,6 @@
 # Ignore macOS stuff
 .DS_Store
 *.command
+# InForm backup files
+*.bas-backup
+*.frm-backup
