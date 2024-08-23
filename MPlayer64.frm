@@ -55,9 +55,10 @@ SUB __UI_LoadForm
 
     __UI_NewID = __UI_NewControl(__UI_Type_ProgressBar, "VolumeProgressBar", 133, 23, 35, 71, __UI_GetID("InfoFrame"))
     __UI_RegisterResult = 0
-    SetCaption __UI_NewID, "\92;#"
     Control(__UI_NewID).HasBorder = False
-    Control(__UI_NewID).Max = 100
+    Control(__UI_NewID).Value = 65535
+    Control(__UI_NewID).Max = 65535
+    Control(__UI_NewID).ShowPercentage = True
 
     __UI_NewID = __UI_NewControl(__UI_Type_Button, "VPBT", 23, 23, 169, 71, __UI_GetID("InfoFrame"))
     __UI_RegisterResult = 0

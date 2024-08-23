@@ -301,6 +301,7 @@ SUB __UI_BeforeUpdateDisplay
             EndDraw VisRPictureBox
 
             Caption(TimeLabel) = AudioAnalyzer_GetCurrentTimeText + " / " + AudioAnalyzer_GetTotalTimeText
+            Control(SeekTrackBar).Value = (AudioAnalyzer_GetCurrentTime / AudioAnalyzer_GetTotalTime) * Control(SeekTrackBar).Max
         END IF
     END IF
 END SUB
