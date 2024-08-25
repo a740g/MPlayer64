@@ -14,6 +14,8 @@ $INCLUDEONCE
 '_DEFINE A-Z AS LONG
 'OPTION _EXPLICIT
 
+'$COLOR:32
+
 'SCREEN _NEWIMAGE(800, 600, 32)
 '_ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH
 '_PRINTMODE _KEEPBACKGROUND ' for progress text
@@ -76,17 +78,17 @@ $INCLUDEONCE
 '        COLOR &HFFFFFFFF ' text color - bright white
 
 '        IF isVertical THEN
-'            AudioAnalyzer_Render 350, 100, 450, 500, 0
+'            AudioAnalyzer_Render 350, 100, 450, 500, 0, Yellow
 '        ELSE
-'            AudioAnalyzer_Render 100, 250, 700, 350, 0
+'            AudioAnalyzer_Render 100, 250, 700, 350, 0, Yellow
 '        END IF
 '    ELSE
 '        IF isVertical THEN
-'            AudioAnalyzer_Render 150, 100, 250, 500, 0
-'            AudioAnalyzer_Render 550, 100, 650, 500, 1
+'            AudioAnalyzer_Render 150, 100, 250, 500, 0, Yellow
+'            AudioAnalyzer_Render 550, 100, 650, 500, 1, Yellow
 '        ELSE
-'            AudioAnalyzer_Render 50, 250, 350, 350, 0
-'            AudioAnalyzer_Render 450, 250, 750, 350, 1
+'            AudioAnalyzer_Render 50, 250, 350, 350, 0, Yellow
+'            AudioAnalyzer_Render 450, 250, 750, 350, 1, Yellow
 '        END IF
 '    END IF
 
@@ -554,95 +556,83 @@ SUB AudioAnalyzer_DrawFilledCircle (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNS
 END SUB
 
 
-SUB AudioAnalyzer_RenderSpectrum (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderSpectrum (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_FFTBuffer() AS SINGLE
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM freqMax AS _UNSIGNED LONG: freqMax = __AudioAnalyzer.fftBufferSamples \ __AudioAnalyzer.fftScaleX
 
-    DIM AS LONG i, j, x, y
+    DIM AS LONG x, y
 
     IF h > w THEN
+        DIM r AS LONG: r = w - 1
+
         IF channel AND 1 THEN
-            WHILE i < h
-                j = __AudioAnalyzer_FFTBuffer(channel, (i * freqMax) \ h) * __AudioAnalyzer.fftScaleY
-                IF j >= w THEN j = w - 1
+            WHILE y < h
+                x = __AudioAnalyzer_FFTBuffer(channel, (y * freqMax) \ h) * __AudioAnalyzer.fftScaleY
+                IF x > r THEN x = r
 
-                x = l + j
-                y = t + i
+                LINE (0, y)-(x, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, x / r)
 
-                LINE (l, y)-(x, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, j / w)
-
-                i = i + 1
+                y = y + 1
             WEND
         ELSE
-            WHILE i < h
-                j = __AudioAnalyzer_FFTBuffer(channel, (i * freqMax) \ h) * __AudioAnalyzer.fftScaleY
-                IF j >= w THEN j = w - 1
+            WHILE y < h
+                x = __AudioAnalyzer_FFTBuffer(channel, (y * freqMax) \ h) * __AudioAnalyzer.fftScaleY
+                IF x > r THEN x = r
 
-                x = r - j
-                y = t + i
+                LINE (r - x, y)-(r, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, x / r)
 
-                LINE (x, y)-(r, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, j / w)
-
-                i = i + 1
+                y = y + 1
             WEND
         END IF
     ELSE
-        WHILE i < w
-            j = __AudioAnalyzer_FFTBuffer(channel, (i * freqMax) \ w) * __AudioAnalyzer.fftScaleY
-            IF j >= h THEN j = h - 1
+        DIM b AS LONG: b = h - 1
 
-            x = l + i
-            y = b - j
+        WHILE x < w
+            y = __AudioAnalyzer_FFTBuffer(channel, (x * freqMax) \ w) * __AudioAnalyzer.fftScaleY
+            IF y > b THEN y = b
 
-            LINE (x, y)-(x, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, j / h)
+            LINE (x, b - y)-(x, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, y / b)
 
-            i = i + 1
+            x = x + 1
         WEND
     END IF
 END SUB
 
 
-SUB AudioAnalyzer_RenderOscilloscope1 (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderOscilloscope1 (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_ClipBuffer() AS SINGLE
-
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
 
     DIM i AS _UNSIGNED LONG, sample AS SINGLE
 
     IF h > w THEN
-        DIM halfWidth AS LONG: halfWidth = w \ 2
-        DIM midX AS LONG: midX = l + halfWidth
+        DIM cx AS LONG: cx = w \ 2
 
         WHILE i < h
             sample = __AudioAnalyzer_ClipBuffer(((i * __AudioAnalyzer.clipBufferFrames) \ h) * __AudioAnalyzer.channels + channel)
-            DIM x AS LONG: x = midX + sample * halfWidth
+            DIM x AS LONG: x = cx + sample * cx
 
             IF i > 0 THEN
-                LINE -(x, t + i), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+                LINE -(x, i), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
             ELSE
-                PSET (x, t + i), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+                PSET (x, i), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
             END IF
 
             i = i + 1
         WEND
     ELSE
-        DIM halfHeight AS LONG: halfHeight = h \ 2
-        DIM midY AS LONG: midY = t + halfHeight
+        DIM cy AS LONG: cy = h \ 2
 
         WHILE i < w
             sample = __AudioAnalyzer_ClipBuffer(((i * __AudioAnalyzer.clipBufferFrames) \ w) * __AudioAnalyzer.channels + channel)
-            DIM y AS LONG: y = midY - sample * halfHeight
+            DIM y AS LONG: y = cy + sample * cy
 
             IF i > 0 THEN
-                LINE -(l + i, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+                LINE -(i, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
             ELSE
-                PSET (l + i, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+                PSET (i, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
             END IF
 
             i = i + 1
@@ -651,36 +641,29 @@ SUB AudioAnalyzer_RenderOscilloscope1 (l AS LONG, t AS LONG, r AS LONG, b AS LON
 END SUB
 
 
-SUB AudioAnalyzer_RenderOscilloscope2 (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderOscilloscope2 (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_ClipBuffer() AS SINGLE
-
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
 
     DIM i AS _UNSIGNED LONG, sample AS SINGLE
 
     IF h > w THEN
-        DIM halfWidth AS LONG: halfWidth = w \ 2
-        DIM midX AS LONG: midX = l + halfWidth
+        DIM cx AS LONG: cx = w \ 2
 
         WHILE i < h
-            DIM y AS LONG: y = t + i
             sample = __AudioAnalyzer_ClipBuffer(((i * __AudioAnalyzer.clipBufferFrames) \ h) * __AudioAnalyzer.channels + channel)
 
-            LINE (midX, y)-(midX + sample * halfWidth, y), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+            LINE (cx, i)-(cx + sample * cx, i), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
 
             i = i + 1
         WEND
     ELSE
-        DIM halfHeight AS LONG: halfHeight = h \ 2
-        DIM midY AS LONG: midY = t + halfHeight
+        DIM cy AS LONG: cy = h \ 2
 
         WHILE i < w
-            DIM x AS LONG: x = l + i
             sample = __AudioAnalyzer_ClipBuffer(((i * __AudioAnalyzer.clipBufferFrames) \ w) * __AudioAnalyzer.channels + channel)
 
-            LINE (x, midY)-(x, midY - sample * halfHeight), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
+            LINE (i, cy)-(i, cy - sample * cy), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, ABS(sample))
 
             i = i + 1
         WEND
@@ -688,89 +671,83 @@ SUB AudioAnalyzer_RenderOscilloscope2 (l AS LONG, t AS LONG, r AS LONG, b AS LON
 END SUB
 
 
-SUB AudioAnalyzer_RenderVU (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderVU (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED AS SINGLE __AudioAnalyzer_IntensityBuffer(), __AudioAnalyzer_PeakBuffer()
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
+    DIM AS LONG size, peak, xp, yp
 
-    DIM AS LONG size, peak, x, y, xp, yp
+    DIM r AS LONG: r = w - 1
+    DIM b AS LONG: b = h - 1
 
     IF h > w THEN
-        size = __AudioAnalyzer_IntensityBuffer(channel) * h * 2!
-        IF size >= h THEN size = h - 1
+        size = __AudioAnalyzer_IntensityBuffer(channel) * b * 2!
+        IF size > b THEN size = b
 
-        peak = __AudioAnalyzer_PeakBuffer(channel) * h * 2!
-        IF peak >= h THEN peak = h - 1
+        peak = __AudioAnalyzer_PeakBuffer(channel) * b * 2!
+        IF peak > b THEN peak = b
 
         yp = b - peak
-        LINE (l, yp)-(r, yp), __AudioAnalyzer.color2
+        LINE (0, yp)-(r, yp), __AudioAnalyzer.color2
 
-        y = b - size
-        LINE (l, y)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / h), BF
+        LINE (0, b - size)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / b), BF
     ELSE
-        size = __AudioAnalyzer_IntensityBuffer(channel) * w * 2!
-        IF size >= w THEN size = w - 1
+        size = __AudioAnalyzer_IntensityBuffer(channel) * r * 2!
+        IF size > r THEN size = r
 
-        peak = __AudioAnalyzer_PeakBuffer(channel) * w * 2!
-        IF peak >= w THEN peak = w - 1
+        peak = __AudioAnalyzer_PeakBuffer(channel) * r * 2!
+        IF peak > r THEN peak = r
 
         IF channel AND 1 THEN
-            xp = l + peak
-            LINE (xp, t)-(xp, b), __AudioAnalyzer.color2
+            LINE (peak, 0)-(peak, b), __AudioAnalyzer.color2
 
-            x = l + size
-            LINE (l, t)-(x, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / w), BF
+            LINE (0, 0)-(size, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / r), BF
         ELSE
             xp = r - peak
-            LINE (xp, t)-(xp, b), __AudioAnalyzer.color2
+            LINE (xp, 0)-(xp, b), __AudioAnalyzer.color2
 
-            x = r - size
-            LINE (x, t)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / w), BF
+            LINE (r - size, 0)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, size / r), BF
         END IF
     END IF
 END SUB
 
 
-SUB AudioAnalyzer_RenderProgress (l AS LONG, t AS LONG, r AS LONG, b AS LONG)
+SUB AudioAnalyzer_RenderProgress (w AS LONG, h AS LONG)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
-
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
 
     DIM size AS LONG, cf AS SINGLE
 
+    DIM r AS LONG: r = w - 1
+    DIM b AS LONG: b = h - 1
+
     IF h > w THEN
         size = (__AudioAnalyzer.currentTime / __AudioAnalyzer.totalTime) * h
-        DIM y AS LONG: y = b - size + 1
+        DIM y AS LONG: y = h - size
         cf = size / h
-        LINE (l, t)-(r, y - 1), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color3, __AudioAnalyzer.color2, cf), BF
-        LINE (l, y)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, cf), BF
+        LINE (0, 0)-(r, y - 1), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color3, __AudioAnalyzer.color2, cf), BF
+        LINE (0, y)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, cf), BF
     ELSE
         size = (__AudioAnalyzer.currentTime / __AudioAnalyzer.totalTime) * w
-        DIM x AS LONG: x = l + size - 1
+        DIM x AS LONG: x = size - 1
         cf = size / w
-        LINE (x + 1, t)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color3, __AudioAnalyzer.color2, cf), BF
-        LINE (l, t)-(x, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, cf), BF
+        LINE (x + 1, 0)-(r, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color3, __AudioAnalyzer.color2, cf), BF
+        LINE (0, 0)-(x, b), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color3, cf), BF
 
         IF _NEGATE __AudioAnalyzer.progressHideText THEN
             DIM text AS STRING: text = __AudioAnalyzer.currentTimeText + " / " + __AudioAnalyzer.totalTimeText
-            DIM textX AS LONG: textX = l + w \ 2 - _UPRINTWIDTH(text) \ 2
-            DIM textY AS LONG: textY = t + h \ 2 - _UFONTHEIGHT \ 2
+            DIM textX AS LONG: textX = w \ 2 - _UPRINTWIDTH(text) \ 2
+            DIM textY AS LONG: textY = h \ 2 - _UFONTHEIGHT \ 2
             _UPRINTSTRING (textX, textY), text
         END IF
     END IF
 END SUB
 
 
-SUB AudioAnalyzer_RenderStars (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderStars (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_Stars() AS __AudioAnalyzer_StarType
     SHARED __AudioAnalyzer_IntensityBuffer() AS SINGLE
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM halfW AS LONG: halfW = w \ 2
     DIM halfH AS LONG: halfH = h \ 2
     DIM aX AS SINGLE: aX = h / w
@@ -785,7 +762,7 @@ SUB AudioAnalyzer_RenderStars (l AS LONG, t AS LONG, r AS LONG, b AS LONG, chann
             __AudioAnalyzer_Stars(channel, i).c = _RGB32(AudioAnalyzer_GetRandomBetween(64, 255), AudioAnalyzer_GetRandomBetween(64, 255), AudioAnalyzer_GetRandomBetween(64, 255))
         END IF
 
-        PSET (l + __AudioAnalyzer_Stars(channel, i).p.x, t + __AudioAnalyzer_Stars(channel, i).p.y), __AudioAnalyzer_Stars(channel, i).c
+        PSET (__AudioAnalyzer_Stars(channel, i).p.x, __AudioAnalyzer_Stars(channel, i).p.y), __AudioAnalyzer_Stars(channel, i).c
 
         __AudioAnalyzer_Stars(channel, i).p.z = __AudioAnalyzer_Stars(channel, i).p.z + __AudioAnalyzer_IntensityBuffer(channel) * __AudioAnalyzer.starSpeedMultiplier
         __AudioAnalyzer_Stars(channel, i).a = __AudioAnalyzer_Stars(channel, i).a + __AUDIOANALYZER_STAR_ANGLE_INC
@@ -798,17 +775,13 @@ SUB AudioAnalyzer_RenderStars (l AS LONG, t AS LONG, r AS LONG, b AS LONG, chann
 END SUB
 
 
-SUB AudioAnalyzer_RenderCircleWaves (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderCircleWaves (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_CircleWaves() AS __AudioAnalyzer_CircleWaveType
     SHARED AS SINGLE __AudioAnalyzer_IntensityBuffer()
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM radMax AS LONG: radMax = AudioAnalyzer_GetMin(w, h) \ 4
     DIM radMin AS LONG: radMin = radMax \ 8
-
-    VIEW (l, t)-(r, b)
 
     DIM i AS _UNSIGNED LONG
     FOR i = __AudioAnalyzer.circleWaveCount - 1 TO 0 STEP -1
@@ -840,17 +813,13 @@ SUB AudioAnalyzer_RenderCircleWaves (l AS LONG, t AS LONG, r AS LONG, b AS LONG,
 END SUB
 
 
-SUB AudioAnalyzer_RenderRadialSparks (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderRadialSparks (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED AS SINGLE __AudioAnalyzer_ClipBuffer()
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM cx AS LONG: cx = w \ 2
     DIM cy AS LONG: cy = h \ 2
     DIM maxLength AS LONG: maxLength = AudioAnalyzer_GetMax(w, h)
-
-    VIEW (l, t)-(r, b)
 
     DIM AS LONG angle, x2, y2
     DIM length AS SINGLE
@@ -865,17 +834,13 @@ SUB AudioAnalyzer_RenderRadialSparks (l AS LONG, t AS LONG, r AS LONG, b AS LONG
 
         LINE (cx, cy)-(x2, y2), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color1, __AudioAnalyzer.color2, sample)
     NEXT angle
-
-    VIEW
 END SUB
 
 
-SUB AudioAnalyzer_RenderTeslaCoil (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderTeslaCoil (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_IntensityBuffer() AS SINGLE
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM cx AS LONG: cx = w \ 2
     DIM cy AS LONG: cy = h \ 2
     DIM maxLength AS LONG: maxLength = AudioAnalyzer_GetMax(w, h)
@@ -883,8 +848,6 @@ SUB AudioAnalyzer_RenderTeslaCoil (l AS LONG, t AS LONG, r AS LONG, b AS LONG, c
 
     DIM AS LONG i, j, x2, y2
     DIM AS SINGLE angle, branchAngle, length, branchLength
-
-    VIEW (l, t)-(r, b)
 
     FOR i = 1 TO 12
         angle = RND * _PI(2!)
@@ -902,20 +865,16 @@ SUB AudioAnalyzer_RenderTeslaCoil (l AS LONG, t AS LONG, r AS LONG, b AS LONG, c
             LINE (x2, y2)-(x2 + COS(branchAngle) * branchLength, y2 + SIN(branchAngle) * branchLength), AudioAnalyzer_InterpolateColor(__AudioAnalyzer.color3, __AudioAnalyzer.color2, intensity)
         NEXT j
     NEXT i
-
-    VIEW
 END SUB
 
 
 ' Adapted from Bubble Universe by Paul Dunn (ZXDunny)
-SUB AudioAnalyzer_RenderBubbleUniverse (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderBubbleUniverse (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED AS SINGLE __AudioAnalyzer_IntensityBuffer(), __AudioAnalyzer_PeakBuffer()
 
     STATIC sT AS SINGLE
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM cx AS LONG: cx = w \ 2
     DIM cy AS LONG: cy = h \ 2
 
@@ -938,7 +897,7 @@ SUB AudioAnalyzer_RenderBubbleUniverse (l AS LONG, t AS LONG, r AS LONG, b AS LO
             v = COS(i + v) + COS(_PI(2! / 235!) * i + x)
             x = u + sT
 
-            PSET (l + cx + u * ax * 0.5!, t + cy + v * ay * 0.5!), _RGB32(i, j, 255! * __AudioAnalyzer_PeakBuffer(channel))
+            PSET (cx + u * ax * 0.5!, cy + v * ay * 0.5!), _RGB32(i, j, 255! * __AudioAnalyzer_PeakBuffer(channel))
         NEXT
     NEXT
 
@@ -946,18 +905,14 @@ SUB AudioAnalyzer_RenderBubbleUniverse (l AS LONG, t AS LONG, r AS LONG, b AS LO
 END SUB
 
 
-SUB AudioAnalyzer_RenderCircularWaveform (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_RenderCircularWaveform (w AS LONG, h AS LONG, channel AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     SHARED __AudioAnalyzer_ClipBuffer() AS SINGLE
 
-    DIM w AS LONG: w = 1 + r - l
-    DIM h AS LONG: h = 1 + b - t
     DIM cx AS LONG: cx = w \ 2
     DIM cy AS LONG: cy = h \ 2
     DIM radius AS LONG: radius = AudioAnalyzer_GetMin(w, h) \ 3
     DIM angleStep AS SINGLE: angleStep = _PI(2!) / __AudioAnalyzer.clipBufferFrames
-
-    VIEW (l, t)-(r, b)
 
     DIM AS LONG i
 
@@ -975,8 +930,6 @@ SUB AudioAnalyzer_RenderCircularWaveform (l AS LONG, t AS LONG, r AS LONG, b AS 
 
         i = i + 1
     WEND
-
-    VIEW
 END SUB
 
 
@@ -1050,49 +1003,58 @@ SUB AudioAnalyzer_Update
 END SUB
 
 
-SUB AudioAnalyzer_Render (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE)
+SUB AudioAnalyzer_Render (l AS LONG, t AS LONG, r AS LONG, b AS LONG, channel AS _UNSIGNED _BYTE, borderColor AS _UNSIGNED LONG)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
 
-    LINE (l - 1, t - 1)-(r + 1, b + 1), , B
-
     IF __AudioAnalyzer.handle THEN
+        DIM w AS LONG: w = 1 + r - l
+        DIM h AS LONG: h = 1 + b - t
+
+        IF borderColor THEN
+            VIEW (l, t)-(r, b), &HFF000000, borderColor
+        ELSE
+            VIEW (l, t)-(r, b), &HFF000000
+        END IF
+
         IF __AudioAnalyzer.format = __AUDIOANALYZER_FORMAT_UNKNOWN THEN
-            AudioAnalyzer_RenderProgress l, t, r, b
+            AudioAnalyzer_RenderProgress w, h
         ELSE
             SELECT CASE __AudioAnalyzer.style
                 CASE AUDIOANALYZER_STYLE_OSCILLOSCOPE1
-                    AudioAnalyzer_RenderOscilloscope1 l, t, r, b, channel
+                    AudioAnalyzer_RenderOscilloscope1 w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_OSCILLOSCOPE2
-                    AudioAnalyzer_RenderOscilloscope2 l, t, r, b, channel
+                    AudioAnalyzer_RenderOscilloscope2 w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_VU
-                    AudioAnalyzer_RenderVU l, t, r, b, channel
+                    AudioAnalyzer_RenderVU w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_SPECTRUM
-                    AudioAnalyzer_RenderSpectrum l, t, r, b, channel
+                    AudioAnalyzer_RenderSpectrum w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_CIRCULAR_WAVEFORM
-                    AudioAnalyzer_RenderCircularWaveform l, t, r, b, channel
+                    AudioAnalyzer_RenderCircularWaveform w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_RADIAL_SPARKS
-                    AudioAnalyzer_RenderRadialSparks l, t, r, b, channel
+                    AudioAnalyzer_RenderRadialSparks w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_TESLA_COIL
-                    AudioAnalyzer_RenderTeslaCoil l, t, r, b, channel
+                    AudioAnalyzer_RenderTeslaCoil w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_CIRCLE_WAVES
-                    AudioAnalyzer_RenderCircleWaves l, t, r, b, channel
+                    AudioAnalyzer_RenderCircleWaves w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_STARS
-                    AudioAnalyzer_RenderStars l, t, r, b, channel
+                    AudioAnalyzer_RenderStars w, h, channel
 
                 CASE AUDIOANALYZER_STYLE_BUBBLE_UNIVERSE
-                    AudioAnalyzer_RenderBubbleUniverse l, t, r, b, channel
+                    AudioAnalyzer_RenderBubbleUniverse w, h, channel
 
                 CASE ELSE
-                    AudioAnalyzer_RenderProgress l, t, r, b
+                    AudioAnalyzer_RenderProgress w, h
             END SELECT
         END IF
+
+        VIEW
     END IF
 END SUB

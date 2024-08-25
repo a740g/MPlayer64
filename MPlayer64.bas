@@ -291,13 +291,11 @@ SUB __UI_BeforeUpdateDisplay
             END IF
 
             BeginDraw VisLPictureBox
-            CLS , Black
-            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, leftChannel
+            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, leftChannel, 0
             EndDraw VisLPictureBox
 
             BeginDraw VisRPictureBox
-            CLS , Black
-            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, rightChannel
+            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, rightChannel, 0
             EndDraw VisRPictureBox
 
             Caption(TimeLabel) = AudioAnalyzer_GetCurrentTimeText + " / " + AudioAnalyzer_GetTotalTimeText
