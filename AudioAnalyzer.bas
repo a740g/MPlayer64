@@ -179,7 +179,7 @@ SUB AudioAnalyzer_Done
 
     IF __AudioAnalyzer.handle THEN
         __AudioAnalyzer.handle = 0
-        IF __AudioAnalyzer.buffer.SIZE THEN _MEMFREE __AudioAnalyzer.buffer
+        '_MEMFREE __AudioAnalyzer.buffer - this is not needed as _SNDCLOSE auto-frees the mem block
         __AudioAnalyzer.format = __AUDIOANALYZER_FORMAT_UNKNOWN
         __AudioAnalyzer.channels = 0
         __AudioAnalyzer.currentTime = 0#
@@ -278,7 +278,7 @@ END FUNCTION
 SUB AudioAnalyzer_SetStyle (style AS _UNSIGNED _BYTE)
     SHARED __AudioAnalyzer AS __AudioAnalyzerType
     IF __AudioAnalyzer.handle THEN
-        IF __AudioAnalyzer.buffer.SIZE THEN
+        IF __AudioAnalyzer.format <> __AUDIOANALYZER_FORMAT_UNKNOWN THEN
             __AudioAnalyzer.style = style
         ELSE
             __AudioAnalyzer.style = AUDIOANALYZER_STYLE_PROGRESS
