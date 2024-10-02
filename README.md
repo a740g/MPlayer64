@@ -1,6 +1,6 @@
 # MPLAYER64
 
-This is a [QB64-PE](https://www.qb64phoenix.com/) audio player *(WIP)*. It uses the [InForm-PE](https://github.com/a740g/InForm-PE) GUI library.
+This is a [QB64-PE](https://www.qb64phoenix.com/) audio player *(WIP)*. It uses the [InForm-PE](https://github.com/a740g/InForm-PE) GUI library and [Toolbox64](https://github.com/a740g/Toolbox64).
 
 ---
 
