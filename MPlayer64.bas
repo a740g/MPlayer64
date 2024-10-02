@@ -69,14 +69,14 @@ DIM SHARED VisRPictureBox AS LONG
 DIM SHARED TimeLabel AS LONG
 
 ': External modules: ---------------------------------------------------------------
-'$INCLUDE:'AudioAnalyzer.bi'
-'$INCLUDE:'InForm/extensions/Pathname.bi'
-'$INCLUDE:'InForm/InForm.bi'
-'$INCLUDE:'InForm/xp.uitheme'
+'$INCLUDE:'toolbox64/AudioAnalyzer.bi'
+'$INCLUDE:'inform-pe/InForm/extensions/Pathname.bi'
+'$INCLUDE:'inform-pe/InForm/InForm.bi'
+'$INCLUDE:'inform-pe/InForm/xp.uitheme'
 '$INCLUDE:'MPlayer64.frm'
-'$INCLUDE:'InForm/InForm.ui'
-'$INCLUDE:'InForm/extensions/Pathname.bas'
-'$INCLUDE:'AudioAnalyzer.bas'
+'$INCLUDE:'inform-pe/InForm/InForm.ui'
+'$INCLUDE:'inform-pe/InForm/extensions/Pathname.bas'
+'$INCLUDE:'toolbox64/AudioAnalyzer.bas'
 
 ': User procedures: ----------------------------------------------------------------
 SUB Playlist_AddCommandLineList
@@ -88,7 +88,7 @@ SUB Playlist_AddCommandLineList
 END SUB
 
 SUB Playlist_AddOpenFileDialogList
-    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, , True)
+    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, , TRUE)
 
     IF LEN(ofdList) THEN
         DO
@@ -113,7 +113,7 @@ SUB Playlist_AddFile (fileName AS STRING)
         REDIM _PRESERVE PlaylistFiles(1 TO UB) AS STRING
         PlaylistFiles(UB) = fileName
 
-        Control(PlayListBox).Disabled = False
+        Control(PlayListBox).Disabled = FALSE
         IF Control(PlayListBox).Value = 0 THEN Control(PlayListBox).Value = 1
     END IF
 END SUB
@@ -130,15 +130,15 @@ SUB Playlist_UpdateUI
     Control(PlayListBox).Value = selectedItem
 
     IF Control(PlayListBox).Value > 0 THEN
-        Control(ClearBT).Disabled = False
-        Control(PreviousBT).Disabled = False
-        Control(PlayBT).Disabled = False
-        Control(NextBT).Disabled = False
+        Control(ClearBT).Disabled = FALSE
+        Control(PreviousBT).Disabled = FALSE
+        Control(PlayBT).Disabled = FALSE
+        Control(NextBT).Disabled = FALSE
     ELSE
-        Control(ClearBT).Disabled = True
-        Control(PreviousBT).Disabled = True
-        Control(PlayBT).Disabled = True
-        Control(NextBT).Disabled = True
+        Control(ClearBT).Disabled = TRUE
+        Control(PreviousBT).Disabled = TRUE
+        Control(PlayBT).Disabled = TRUE
+        Control(NextBT).Disabled = TRUE
     END IF
 END SUB
 
@@ -155,13 +155,13 @@ SUB Playlist_Play
         IF AudioAnalyzer_Init(Media) THEN
             AudioAnalyzer_SetStyle AnalyzerStyle
             _SNDPLAY Media
-            IsPlaying = True
+            IsPlaying = TRUE
             SetCaption PlayBT, "&Stop"
-            Control(PauseBT).Disabled = False
-            Control(VisualBT).Disabled = False
-            Control(VMBT).Disabled = False
-            Control(VPBT).Disabled = False
-            Control(SeekTrackBar).Disabled = False
+            Control(PauseBT).Disabled = FALSE
+            Control(VisualBT).Disabled = FALSE
+            Control(VMBT).Disabled = FALSE
+            Control(VPBT).Disabled = FALSE
+            Control(SeekTrackBar).Disabled = FALSE
             UpdateAppTitle
         ELSE
             _SNDCLOSE Media
@@ -176,13 +176,13 @@ SUB Playlist_Stop
         _SNDSTOP Media
         _SNDCLOSE Media
         Media = 0
-        IsPlaying = False
+        IsPlaying = FALSE
         SetCaption PlayBT, "&Play"
-        Control(PauseBT).Disabled = True
-        Control(VisualBT).Disabled = True
-        Control(VMBT).Disabled = True
-        Control(VPBT).Disabled = True
-        Control(SeekTrackBar).Disabled = True
+        Control(PauseBT).Disabled = TRUE
+        Control(VisualBT).Disabled = TRUE
+        Control(VMBT).Disabled = TRUE
+        Control(VPBT).Disabled = TRUE
+        Control(SeekTrackBar).Disabled = TRUE
         SetCaption TimeLabel, "00:00:00 / 00:00:00"
 
         BeginDraw VisLPictureBox
@@ -291,11 +291,13 @@ SUB __UI_BeforeUpdateDisplay
             END IF
 
             BeginDraw VisLPictureBox
-            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, leftChannel, 0
+            CLS
+            AudioAnalyzer_RenderDirect _WIDTH, _HEIGHT, leftChannel
             EndDraw VisLPictureBox
 
             BeginDraw VisRPictureBox
-            AudioAnalyzer_Render 0, 0, _WIDTH - 1, _HEIGHT - 1, rightChannel, 0
+            CLS
+            AudioAnalyzer_RenderDirect _WIDTH, _HEIGHT, rightChannel
             EndDraw VisRPictureBox
 
             Caption(TimeLabel) = AudioAnalyzer_GetCurrentTimeText + " / " + AudioAnalyzer_GetTotalTimeText

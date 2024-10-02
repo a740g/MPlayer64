@@ -9,11 +9,6 @@ OPTION _EXPLICIT
 OPTION BASE 1
 '$STATIC
 
-$RESIZE:SMOOTH
-
-$UNSTABLE:HTTP
-
-$EXEICON:'./MPlayer64.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
 $VERSIONINFO:FileDescription='MIDI Player 64 executable'
 $VERSIONINFO:InternalName='MIDIPlayer64'
@@ -23,17 +18,15 @@ $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=3,2,1,0
-$VERSIONINFO:PRODUCTVERSION#=3,2,1,0
+$VERSIONINFO:FILEVERSION#=3,2,2,0
+$VERSIONINFO:PRODUCTVERSION#=3,2,2,0
+$EXEICON:'./MPlayer64.ico'
 
+$UNSTABLE:HTTP
 $COLOR:32
-'$INCLUDE:'InForm/extensions/Pathname.bi'
-'$INCLUDE:'AudioAnalyzer.bi'
-
-CONST FALSE = 0, TRUE = NOT FALSE
-CONST NULL = 0
-CONST QUOTE = CHR$(34)
-CONST LF = CHR$(10)
+'$INCLUDE:'toolbox64/Pathname.bi'
+'$INCLUDE:'toolbox64/File.bi'
+'$INCLUDE:'toolbox64/AudioAnalyzer.bi'
 
 CONST APP_NAME = "MIDI Player 64"
 CONST SCREEN_WIDTH = 640
@@ -67,7 +60,7 @@ TYPE PlayerType
     bankFileName AS STRING
     analyzerStyle AS INTEGER
     fftScaleX AS _UNSIGNED _BYTE
-    fftScaleY AS SINGLE
+    fftScaleY AS _UNSIGNED _BYTE
     downloadBuffer AS STRING
     vLB AS RectType
     vRB AS RectType
@@ -111,10 +104,11 @@ SUB InitProgram
     SHARED Player AS PlayerType
 
     CHDIR _STARTDIR$
+    $RESIZE:SMOOTH
     SCREEN _NEWIMAGE(SCREEN_WIDTH, SCREEN_HEIGHT, 32)
+    _ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH
     _TITLE APP_NAME + " " + _OS$
     _ACCEPTFILEDROP
-    _ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH
     _DISPLAYORDER _HARDWARE , _HARDWARE1 , _GLRENDER , _SOFTWARE
     _PRINTMODE _KEEPBACKGROUND
     _CONTROLCHR OFF
@@ -122,9 +116,9 @@ SUB InitProgram
     _DISPLAY
 
     Player.volume = 1!
-    Player.analyzerStyle = AUDIOANALYZER_STYLE_CIRCULAR_WAVEFORM
+    Player.analyzerStyle = AUDIOANALYZER_STYLE_SPECTRUM
     Player.fftScaleX = 8
-    Player.fftScaleY = 3!
+    Player.fftScaleY = 5
 
     CONST VIS_SPACE = 8
 
@@ -142,30 +136,11 @@ SUB InitProgram
 END SUB
 
 
-FUNCTION DownloadFile$ (url AS STRING)
-    DIM h AS LONG: h = _OPENCLIENT("HTTP:" + url)
-
-    IF h <> 0 THEN
-        DIM AS STRING content, buffer
-
-        WHILE NOT EOF(h)
-            _LIMIT FRAME_RATE_MAX
-            GET h, , buffer
-            content = content + buffer
-        WEND
-
-        CLOSE h
-
-        DownloadFile = content
-    END IF
-END FUNCTION
-
-
 FUNCTION LoadTune& (PathOrURL AS STRING)
     SHARED Player AS PlayerType
 
     IF LEN(Pathname_GetDriveOrScheme(PathOrURL)) > 2 THEN
-        Player.downloadBuffer = DownloadFile(PathOrURL)
+        Player.downloadBuffer = File_Load(PathOrURL)
         LoadTune = _SNDOPEN(Player.downloadBuffer, "memory")
     ELSE
         Player.downloadBuffer = ""
@@ -183,22 +158,6 @@ SUB PlayTune
         _SNDPLAY Player.song
     END IF
 END SUB
-
-
-FUNCTION BoolToString$ (expression AS LONG, style AS _UNSIGNED _BYTE)
-    $CHECKING:OFF
-    SELECT CASE style
-        CASE 1
-            IF expression THEN BoolToString = "On" ELSE BoolToString = "Off"
-        CASE 2
-            IF expression THEN BoolToString = "Enabled" ELSE BoolToString = "Disabled"
-        CASE 3
-            IF expression THEN BoolToString = "1" ELSE BoolToString = "0"
-        CASE ELSE
-            IF expression THEN BoolToString = "True" ELSE BoolToString = "False"
-    END SELECT
-    $CHECKING:ON
-END FUNCTION
 
 
 SUB DrawWeirdPlasma
@@ -258,7 +217,7 @@ SUB DrawVisualization
     CONST HELP_LINE1 = "ESC NEXT " + CHR$(179) + " q/Q MAIN " + CHR$(179) + " SPC PAUS " + CHR$(179) + " _/- VOL- " + CHR$(179) + " +/= VOL+ " + CHR$(179) + " l/L LOOP " + CHR$(179) + " F1  LOAD"
     CONST HELP_LINE2 = "F6  SAVE " + CHR$(179) + " </, VIS- " + CHR$(179) + " >/. VIS+ " + CHR$(179) + " LT  SPX- " + CHR$(179) + " RT  SPX+ " + CHR$(179) + " UP  SPY- " + CHR$(179) + " DN  SPY+"
     CONST STAT_LINE1 = CHR$(179) + " \\ : \      \ / \      \ " + CHR$(179) + " VOLUME: ###% " + CHR$(179) + " CHANNELS: ## " + CHR$(179)
-    CONST STAT_LINE2 = CHR$(179) + " LOOP:  \ \ " + CHR$(179) + " VISUAL: ### " + CHR$(179) + " FFT X: ##### " + CHR$(179) + " FFT Y: ###.# " + CHR$(179)
+    CONST STAT_LINE2 = CHR$(179) + " LOOP:  \ \ " + CHR$(179) + " VISUAL: ### " + CHR$(179) + " FFT X: ##### " + CHR$(179) + " FFT Y: ##### " + CHR$(179)
     CONST PLAY_PAUSE_TEXT = ">>||"
 
     STATIC AS STRING statDeco1, statDeco2, statDeco3
@@ -278,15 +237,19 @@ SUB DrawVisualization
     LOCATE 16, 12: PRINT statDeco1;
     LOCATE 17, 12: PRINT USING STAT_LINE1; MID$(PLAY_PAUSE_TEXT, 1 + (_SNDPAUSED(Player.song) * -2), 2); AudioAnalyzer_GetCurrentTimeText; AudioAnalyzer_GetTotalTimeText; Player.volume * 100; Player.channels;
     LOCATE 18, 12: PRINT statDeco2;
-    LOCATE 19, 12: PRINT USING STAT_LINE2; BoolToString(Player.isLooping, 1); Player.analyzerStyle; Player.fftScaleX; Player.fftScaleY;
+    LOCATE 19, 12: PRINT USING STAT_LINE2; String_FormatBoolean(Player.isLooping, 1); Player.analyzerStyle; Player.fftScaleX; Player.fftScaleY;
     LOCATE 20, 12: PRINT statDeco3;
 
     COLOR White
     IF Player.vChan1 = Player.vChan2 THEN
-        AudioAnalyzer_Render Player.vLB.l, Player.vLB.t, Player.vRB.r, Player.vRB.b, Player.vChan1, Yellow
+        Graphics_DrawRectangle Player.vLB.l - 1, Player.vLB.t - 1, Player.vRB.r + 1, Player.vRB.b + 1, BGRA_YELLOW
+        AudioAnalyzer_Render Player.vLB.l, Player.vLB.t, Player.vRB.r, Player.vRB.b, Player.vChan1
     ELSE
-        AudioAnalyzer_Render Player.vLB.l, Player.vLB.t, Player.vLB.r, Player.vLB.b, Player.vChan1, Yellow
-        AudioAnalyzer_Render Player.vRB.l, Player.vRB.t, Player.vRB.r, Player.vRB.b, Player.vChan2, Yellow
+        Graphics_DrawRectangle Player.vLB.l - 1, Player.vLB.t - 1, Player.vLB.r + 1, Player.vLB.b + 1, BGRA_YELLOW
+        AudioAnalyzer_Render Player.vLB.l, Player.vLB.t, Player.vLB.r, Player.vLB.b, Player.vChan1
+
+        Graphics_DrawRectangle Player.vRB.l - 1, Player.vRB.t - 1, Player.vRB.r + 1, Player.vRB.b + 1, BGRA_YELLOW
+        AudioAnalyzer_Render Player.vRB.l, Player.vRB.t, Player.vRB.r, Player.vRB.b, Player.vChan2
     END IF
 
     COLOR Gray
@@ -344,7 +307,7 @@ FUNCTION OnPlayTune%% (fileName AS STRING)
     Player.song = LoadTune(fileName)
 
     IF _NEGATE (Player.song OR AudioAnalyzer_Init(Player.song)) THEN
-        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName + LF + LF + "The MIDI file or the MIDI instrument bank may be corrupt.", "error"
+        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName + STRING_LF + STRING_LF + "The MIDI file or the MIDI instrument bank may be corrupt.", "error"
         EXIT FUNCTION
     END IF
 
@@ -432,11 +395,11 @@ FUNCTION OnPlayTune%% (fileName AS STRING)
                 AudioAnalyzer_SetFFTScale Player.fftScaleX, Player.fftScaleY
 
             CASE 18432 ' up arrow
-                IF Player.fftScaleY < 5! THEN Player.fftScaleY = Player.fftScaleY + 0.25!
+                IF Player.fftScaleY < 8 THEN Player.fftScaleY = Player.fftScaleY + 1
                 AudioAnalyzer_SetFFTScale Player.fftScaleX, Player.fftScaleY
 
             CASE 20480 ' down arrow
-                IF Player.fftScaleY > 0.5! THEN Player.fftScaleY = Player.fftScaleY - 0.25!
+                IF Player.fftScaleY > 1 THEN Player.fftScaleY = Player.fftScaleY - 1
                 AudioAnalyzer_SetFFTScale Player.fftScaleX, Player.fftScaleY
 
             CASE 15104 ' F1
@@ -468,7 +431,7 @@ FUNCTION OnCommandLine%%
     DIM e AS _BYTE: e = EVENT_NONE
 
     IF COMMAND$(1) = "/?" _ORELSE COMMAND$(1) = "-?" _ORELSE COMMAND$(1) = "/h" _ORELSE COMMAND$(1) = "-h" _ORELSE COMMAND$(1) = "--help" THEN
-        _MESSAGEBOX APP_NAME, APP_NAME + LF + LF + "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + LF + "    -?: Shows this message" + LF + LF + "Copyright (c) 2024, Samuel Gomes" + LF + LF + "https://github.com/a740g/", "info"
+        _MESSAGEBOX APP_NAME, APP_NAME + STRING_LF + STRING_LF + "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + STRING_LF + "    -?: Shows this message" + STRING_LF + STRING_LF + "Copyright (c) 2024, Samuel Gomes" + STRING_LF + STRING_LF + "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
     ELSE
@@ -482,32 +445,6 @@ FUNCTION OnCommandLine%%
 END FUNCTION
 
 
-FUNCTION ParseOpenFileDialogList& (ofdList AS STRING, ofdArray() AS STRING)
-    DIM AS LONG p, c
-    DIM ts AS STRING
-
-    REDIM ofdArray(0 TO 0) AS STRING
-    ts = ofdList
-
-    DO
-        p = INSTR(ts, "|")
-
-        IF p = NULL THEN
-            ofdArray(c) = ts
-
-            ParseOpenFileDialogList& = c + 1
-            EXIT FUNCTION
-        END IF
-
-        ofdArray(c) = LEFT$(ts, p - 1)
-        ts = MID$(ts, p + 1)
-
-        c = c + 1
-        REDIM _PRESERVE ofdArray(0 TO c) AS STRING
-    LOOP
-END FUNCTION
-
-
 FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
@@ -518,7 +455,7 @@ FUNCTION OnSelectedFiles%%
 
     REDIM fileNames(0 TO 0) AS STRING
 
-    DIM j AS LONG: j = ParseOpenFileDialogList(ofdList, fileNames())
+    DIM j AS LONG: j = String_Tokenize(ofdList, "|", STRING_EMPTY, FALSE, fileNames())
 
     DIM i AS LONG: WHILE i < j
         e = OnPlayTune(fileNames(i))
@@ -550,15 +487,15 @@ END FUNCTION
 
 
 FUNCTION GetRandomBitMidiFileURL$
-    DIM buffer AS STRING: buffer = DownloadFile("https://bitmidi.com/random")
-    DIM bufPos AS LONG: bufPos = INSTR(buffer, QUOTE + "downloadUrl" + QUOTE)
+    DIM buffer AS STRING: buffer = File_LoadFromURL("https://bitmidi.com/random")
+    DIM bufPos AS LONG: bufPos = INSTR(buffer, STRING_QUOTE + "downloadUrl" + STRING_QUOTE)
 
     IF bufPos > 0 THEN
         bufPos = bufPos + 13
-        bufPos = INSTR(bufPos, buffer, QUOTE)
+        bufPos = INSTR(bufPos, buffer, STRING_QUOTE)
         IF bufPos > 0 THEN
             bufPos = bufPos + 1
-            GetRandomBitMidiFileURL = "https://bitmidi.com" + MID$(buffer, bufPos, INSTR(bufPos, buffer, QUOTE) - bufPos)
+            GetRandomBitMidiFileURL = "https://bitmidi.com" + MID$(buffer, bufPos, INSTR(bufPos, buffer, STRING_QUOTE) - bufPos)
         END IF
     END IF
 END FUNCTION
@@ -675,5 +612,6 @@ FUNCTION OnWelcomeScreen%%
 END FUNCTION
 
 
-'$INCLUDE:'InForm/extensions/Pathname.bas'
-'$INCLUDE:'AudioAnalyzer.bas'
+'$INCLUDE:'toolbox64/Pathname.bas'
+'$INCLUDE:'toolbox64/File.bas'
+'$INCLUDE:'toolbox64/AudioAnalyzer.bas'
