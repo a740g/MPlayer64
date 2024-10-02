@@ -1,0 +1,6 @@
+[submodule "toolbox64"]
+	path = toolbox64
+	url = https://github.com/a740g/Toolbox64
+[submodule "inform-pe"]
+	path = inform-pe
+	url = https://github.com/a740g/InForm-PE
