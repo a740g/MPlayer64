@@ -18,12 +18,11 @@ $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=3,2,2,0
-$VERSIONINFO:PRODUCTVERSION#=3,2,2,0
+$VERSIONINFO:FILEVERSION#=3,2,3,0
+$VERSIONINFO:PRODUCTVERSION#=3,2,3,0
 $EXEICON:'./MPlayer64.ico'
 
 $UNSTABLE:HTTP
-$COLOR:32
 '$INCLUDE:'toolbox64/Pathname.bi'
 '$INCLUDE:'toolbox64/File.bi'
 '$INCLUDE:'toolbox64/AudioAnalyzer.bi'
@@ -42,10 +41,17 @@ CONST EVENT_HTTP = 6
 
 $IF WINDOWS THEN
     CONST MIDI_SOUNDBANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.dll"
-    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xfm|*.xmi"
+    CONST AUDIO_FILE_FILTERS =  "*.wav|*.aiff|*.aifc|*.flac|*.ogg|*.mp3|*.it|*.xm|*.s3m|*.mod|*.rad|*.ahx|*.hvl|" + _
+                                "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|" + _
+                                "*.mid|*.midi|*.xfm|*.xmi|*.qoa"
 $ELSE
-    CONST MIDI_SOUNDBANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|*.WOPL|*.OP2|*.TMB|*.AD|*.OPL|*.SF2|*.SF3|*.SFO"
-    CONST MIDI_FILE_FILTERS = "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|*.mid|*.midi|*.xfm|*.xmi|*.MUS|*.HMI|*.HMP|*.HMQ|*.KAR|*.LDS|*.MDS|*.MIDS|*.RCP|*.R36|*.G18|*.G36|*.RMI|*.MID|*.MIDI|*.XFM|*.XMI"
+    CONST MIDI_SOUNDBANK_FILE_FILTERS = "*.wopl|*.op2|*.tmb|*.ad|*.opl|*.sf2|*.sf3|*.sfo|" + _
+                                        "*.WOPL|*.OP2|*.TMB|*.AD|*.OPL|*.SF2|*.SF3|*.SFO"
+    CONST AUDIO_FILE_FILTERS =  "*.wav|*.aiff|*.aifc|*.flac|*.ogg|*.mp3|*.it|*.xm|*.s3m|*.mod|*.rad|*.ahx|*.hvl|" + _
+                                "*.mus|*.hmi|*.hmp|*.hmq|*.kar|*.lds|*.mds|*.mids|*.rcp|*.r36|*.g18|*.g36|*.rmi|" + _
+                                "*.mid|*.midi|*.xfm|*.xmi|*.qoa|*.WAV|*.AIFF|*.AIFC|*.FLAC|*.OGG|*.MP3|*.IT|*.XM|" + _
+                                "*.S3M|*.MOD|*.RAD|*.AHX|*.HVL|*.MUS|*.HMI|*.HMP|*.HMQ|*.KAR|*.LDS|*.MDS|*.MIDS|" + _
+                                "*.RCP|*.R36|*.G18|*.G36|*.RMI|*.MID|*.MIDI|*.XFM|*.XMI|*.QOA"
 $END IF
 
 TYPE RectType
@@ -104,15 +110,20 @@ SUB InitProgram
     SHARED Player AS PlayerType
 
     CHDIR _STARTDIR$
+
     $RESIZE:SMOOTH
     SCREEN _NEWIMAGE(SCREEN_WIDTH, SCREEN_HEIGHT, 32)
-    _ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH
-    _TITLE APP_NAME + " " + _OS$
-    _ACCEPTFILEDROP
     _DISPLAYORDER _HARDWARE , _HARDWARE1 , _GLRENDER , _SOFTWARE
+    _ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH
     _PRINTMODE _KEEPBACKGROUND
     _CONTROLCHR OFF
+
+    _TITLE APP_NAME + " " + _OS$
+
+    _ACCEPTFILEDROP
+
     RANDOMIZE TIMER
+
     _DISPLAY
 
     Player.volume = 1!
@@ -162,6 +173,7 @@ END SUB
 
 SUB DrawWeirdPlasma
     $CHECKING:OFF
+
     CONST __WP_DIV = 8
 
     STATIC AS LONG w, h, t, imgHandle
@@ -209,6 +221,7 @@ SUB DrawWeirdPlasma
     _FREEIMAGE imgGPUHandle
 
     t = t + 1
+
     $CHECKING:ON
 END SUB
 
@@ -230,9 +243,9 @@ SUB DrawVisualization
 
     SHARED Player AS PlayerType
 
-    IF _SNDPAUSED(Player.song) _ORELSE NOT _SNDPLAYING(Player.song) THEN COLOR OrangeRed ELSE COLOR Cyan
+    IF _SNDPAUSED(Player.song) _ORELSE NOT _SNDPLAYING(Player.song) THEN COLOR BGRA_ORANGERED ELSE COLOR BGRA_CYAN
 
-    LINE (91, 247)-(548, 311), Black, BF
+    Graphics_DrawFilledRectangle 91, 247, 548, 311, BGRA_BLACK
 
     LOCATE 16, 12: PRINT statDeco1;
     LOCATE 17, 12: PRINT USING STAT_LINE1; MID$(PLAY_PAUSE_TEXT, 1 + (_SNDPAUSED(Player.song) * -2), 2); AudioAnalyzer_GetCurrentTimeText; AudioAnalyzer_GetTotalTimeText; Player.volume * 100; Player.channels;
@@ -240,7 +253,7 @@ SUB DrawVisualization
     LOCATE 19, 12: PRINT USING STAT_LINE2; String_FormatBoolean(Player.isLooping, 1); Player.analyzerStyle; Player.fftScaleX; Player.fftScaleY;
     LOCATE 20, 12: PRINT statDeco3;
 
-    COLOR White
+    COLOR BGRA_WHITE
     IF Player.vChan1 = Player.vChan2 THEN
         Graphics_DrawRectangle Player.vLB.l - 1, Player.vLB.t - 1, Player.vRB.r + 1, Player.vRB.b + 1, BGRA_YELLOW
         AudioAnalyzer_Render Player.vLB.l, Player.vLB.t, Player.vRB.r, Player.vRB.b, Player.vChan1
@@ -252,7 +265,7 @@ SUB DrawVisualization
         AudioAnalyzer_Render Player.vRB.l, Player.vRB.t, Player.vRB.r, Player.vRB.b, Player.vChan2
     END IF
 
-    COLOR Gray
+    COLOR BGRA_GRAY
     LOCATE 21, 4: PRINT HELP_LINE1;
     LOCATE 22, 4: PRINT HELP_LINE2;
 
@@ -449,7 +462,7 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = _OPENFILEDIALOG$(APP_NAME, , MIDI_FILE_FILTERS, , TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , AUDIO_FILE_FILTERS, , TRUE)
 
     IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
@@ -542,7 +555,7 @@ FUNCTION OnWelcomeScreen%%
 
     DO
         CLS , 0
-        COLOR OrangeRed, 0
+        COLOR BGRA_ORANGERED, 0
 
         IF TIMER MOD 7 = 0 THEN
             PRINT "         ,-.   ,-.   ,-.    ,.   .   , , ,-.  ,   ;-.  .                   (+_+)"
@@ -553,33 +566,33 @@ FUNCTION OnWelcomeScreen%%
         END IF
 
         PRINT "        /   \  |  ) /      / |   |\ /| | |  \ |   |  ) |"
-        COLOR White
+        COLOR BGRA_WHITE
         PRINT "        |   |  |-<  |,-.  '--|   | V | | |  | |   |-'  | ,-: . . ,-. ;-."
         PRINT "        \   X  |  ) (   )    |   |   | | |  / |   |    | | | | | |-' |"
-        COLOR Lime
+        COLOR BGRA_LIME
         PRINT "         `-' ` `-'   `-'     '   '   ' ' `-'  '   '    ' `-` `-| `-' '"
         PRINT "                                                             `-'"
         PRINT
         PRINT
-        PRINT "                       ";: COLOR Cyan: PRINT "F1";: COLOR Gray: PRINT " ............ ";: COLOR Magenta: PRINT "MULTI-SELECT FILES"
+        PRINT "                       ";: COLOR BGRA_CYAN: PRINT "F1";: COLOR BGRA_GRAY: PRINT " ............ ";: COLOR BGRA_MAGENTA: PRINT "MULTI-SELECT FILES"
         PRINT
-        PRINT "                       ";: COLOR Cyan: PRINT "F2";: COLOR Gray: PRINT " ............. ";: COLOR Magenta: PRINT "PLAY FROM BITMIDI"
+        PRINT "                       ";: COLOR BGRA_CYAN: PRINT "F2";: COLOR BGRA_GRAY: PRINT " ............. ";: COLOR BGRA_MAGENTA: PRINT "PLAY FROM BITMIDI"
         PRINT
-        PRINT "                       ";: COLOR Cyan: PRINT "F9";: COLOR Gray: PRINT " ..... ";: COLOR Magenta: PRINT USING "SYNTH: [\              \]"; bank
+        PRINT "                       ";: COLOR BGRA_CYAN: PRINT "F9";: COLOR BGRA_GRAY: PRINT " ..... ";: COLOR BGRA_MAGENTA: PRINT USING "SYNTH: [\              \]"; bank
         PRINT
-        PRINT "                       ";: COLOR Cyan: PRINT "ESC";: COLOR Gray: PRINT " ......................... ";: COLOR Magenta: PRINT "QUIT"
+        PRINT "                       ";: COLOR BGRA_CYAN: PRINT "ESC";: COLOR BGRA_GRAY: PRINT " ......................... ";: COLOR BGRA_MAGENTA: PRINT "QUIT"
         PRINT
         PRINT
 
         $IF WINDOWS THEN
-            PRINT "     ";: COLOR White: PRINT "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY."
+            PRINT "     ";: COLOR BGRA_WHITE: PRINT "DRAG AND DROP MULTIPLE FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY."
         $ELSE
             PRINT
         $END IF
 
-        PRINT "   ";: COLOR White: PRINT "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE."
+        PRINT "   ";: COLOR BGRA_WHITE: PRINT "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE."
         PRINT
-        PRINT "           ";: COLOR White: PRINT "THIS WAS WRITTEN IN QB64-PE (";: COLOR Blue: PRINT "https://www.qb64phoenix.com";: COLOR White: PRINT ").";
+        PRINT "           ";: COLOR BGRA_WHITE: PRINT "THIS WAS WRITTEN IN QB64-PE (";: COLOR BGRA_BLUE: PRINT "https://www.qb64phoenix.com";: COLOR BGRA_WHITE: PRINT ").";
 
         k = _KEYHIT
 
