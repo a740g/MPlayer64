@@ -18,11 +18,10 @@ $VERSIONINFO:OriginalFilename='MIDIPlayer64.exe'
 $VERSIONINFO:ProductName='MIDI Player 64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=3,2,3,0
-$VERSIONINFO:PRODUCTVERSION#=3,2,3,0
+$VERSIONINFO:FILEVERSION#=3,2,4,0
+$VERSIONINFO:PRODUCTVERSION#=3,2,4,0
 $EXEICON:'./MPlayer64.ico'
 
-$UNSTABLE:HTTP
 '$INCLUDE:'toolbox64/Pathname.bi'
 '$INCLUDE:'toolbox64/File.bi'
 '$INCLUDE:'toolbox64/AudioAnalyzer.bi'
@@ -129,7 +128,7 @@ SUB InitProgram
     Player.volume = 1!
     Player.analyzerStyle = AUDIOANALYZER_STYLE_SPECTRUM
     Player.fftScaleX = 8
-    Player.fftScaleY = 5
+    Player.fftScaleY = 6
 
     CONST VIS_SPACE = 8
 
@@ -299,11 +298,11 @@ SUB SaveTune (fileName AS STRING)
         IF NOT stopNagging THEN
             SELECT CASE _MESSAGEBOX(APP_NAME, "Do you want to use " + savePath + " for future saves?", "yesnocancel", "question", 1)
                 CASE 0
-                    stopNagging = TRUE
+                    stopNagging = _TRUE
                 CASE 1
-                    alwaysUseSamePath = TRUE
+                    alwaysUseSamePath = _TRUE
                 CASE 2
-                    alwaysUseSamePath = FALSE
+                    alwaysUseSamePath = _FALSE
             END SELECT
         END IF
     ELSE
@@ -320,7 +319,7 @@ FUNCTION OnPlayTune%% (fileName AS STRING)
     Player.song = LoadTune(fileName)
 
     IF _NEGATE (Player.song OR AudioAnalyzer_Init(Player.song)) THEN
-        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName + STRING_LF + STRING_LF + "The MIDI file or the MIDI instrument bank may be corrupt.", "error"
+        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName + _CHR_LF + _CHR_LF + "The MIDI file or the MIDI instrument bank may be corrupt.", "error"
         EXIT FUNCTION
     END IF
 
@@ -444,7 +443,7 @@ FUNCTION OnCommandLine%%
     DIM e AS _BYTE: e = EVENT_NONE
 
     IF COMMAND$(1) = "/?" _ORELSE COMMAND$(1) = "-?" _ORELSE COMMAND$(1) = "/h" _ORELSE COMMAND$(1) = "-h" _ORELSE COMMAND$(1) = "--help" THEN
-        _MESSAGEBOX APP_NAME, APP_NAME + STRING_LF + STRING_LF + "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + STRING_LF + "    -?: Shows this message" + STRING_LF + STRING_LF + "Copyright (c) 2024, Samuel Gomes" + STRING_LF + STRING_LF + "https://github.com/a740g/", "info"
+        _MESSAGEBOX APP_NAME, APP_NAME + _CHR_LF + _CHR_LF + "Syntax: MIDIPlayer64 [-?] [midifile1.mid] [midifile2.mid] ..." + _CHR_LF + "    -?: Shows this message" + _CHR_LF + _CHR_LF + "Copyright (c) 2024, Samuel Gomes" + _CHR_LF + _CHR_LF + "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
     ELSE
@@ -462,13 +461,13 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = _OPENFILEDIALOG$(APP_NAME, , AUDIO_FILE_FILTERS, , TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , AUDIO_FILE_FILTERS, , _TRUE)
 
     IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
     REDIM fileNames(0 TO 0) AS STRING
 
-    DIM j AS LONG: j = String_Tokenize(ofdList, "|", STRING_EMPTY, FALSE, fileNames())
+    DIM j AS LONG: j = String_Tokenize(ofdList, "|", _STR_EMPTY, _FALSE, fileNames())
 
     DIM i AS LONG: WHILE i < j
         e = OnPlayTune(fileNames(i))
@@ -501,14 +500,14 @@ END FUNCTION
 
 FUNCTION GetRandomBitMidiFileURL$
     DIM buffer AS STRING: buffer = File_LoadFromURL("https://bitmidi.com/random")
-    DIM bufPos AS LONG: bufPos = INSTR(buffer, STRING_QUOTE + "downloadUrl" + STRING_QUOTE)
+    DIM bufPos AS LONG: bufPos = INSTR(buffer, _CHR_QUOTE + "downloadUrl" + _CHR_QUOTE)
 
     IF bufPos > 0 THEN
         bufPos = bufPos + 13
-        bufPos = INSTR(bufPos, buffer, STRING_QUOTE)
+        bufPos = INSTR(bufPos, buffer, _CHR_QUOTE)
         IF bufPos > 0 THEN
             bufPos = bufPos + 1
-            GetRandomBitMidiFileURL = "https://bitmidi.com" + MID$(buffer, bufPos, INSTR(bufPos, buffer, STRING_QUOTE) - bufPos)
+            GetRandomBitMidiFileURL = "https://bitmidi.com" + MID$(buffer, bufPos, INSTR(bufPos, buffer, _CHR_QUOTE) - bufPos)
         END IF
     END IF
 END FUNCTION

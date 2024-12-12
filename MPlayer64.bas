@@ -21,8 +21,8 @@ $VERSIONINFO:OriginalFilename='MPlayer64.exe'
 $VERSIONINFO:ProductName='MPlayer64'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=4,0,0,0
-$VERSIONINFO:PRODUCTVERSION#=4,0,0,0
+$VERSIONINFO:FILEVERSION#=4,0,1,0
+$VERSIONINFO:PRODUCTVERSION#=4,0,1,0
 
 CONST APP_NAME = "MPlayer64"
 
@@ -88,7 +88,7 @@ SUB Playlist_AddCommandLineList
 END SUB
 
 SUB Playlist_AddOpenFileDialogList
-    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, , TRUE)
+    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, , True)
 
     IF LEN(ofdList) THEN
         DO
@@ -113,7 +113,7 @@ SUB Playlist_AddFile (fileName AS STRING)
         REDIM _PRESERVE PlaylistFiles(1 TO UB) AS STRING
         PlaylistFiles(UB) = fileName
 
-        Control(PlayListBox).Disabled = FALSE
+        Control(PlayListBox).Disabled = False
         IF Control(PlayListBox).Value = 0 THEN Control(PlayListBox).Value = 1
     END IF
 END SUB
@@ -130,15 +130,15 @@ SUB Playlist_UpdateUI
     Control(PlayListBox).Value = selectedItem
 
     IF Control(PlayListBox).Value > 0 THEN
-        Control(ClearBT).Disabled = FALSE
-        Control(PreviousBT).Disabled = FALSE
-        Control(PlayBT).Disabled = FALSE
-        Control(NextBT).Disabled = FALSE
+        Control(ClearBT).Disabled = False
+        Control(PreviousBT).Disabled = False
+        Control(PlayBT).Disabled = False
+        Control(NextBT).Disabled = False
     ELSE
-        Control(ClearBT).Disabled = TRUE
-        Control(PreviousBT).Disabled = TRUE
-        Control(PlayBT).Disabled = TRUE
-        Control(NextBT).Disabled = TRUE
+        Control(ClearBT).Disabled = True
+        Control(PreviousBT).Disabled = True
+        Control(PlayBT).Disabled = True
+        Control(NextBT).Disabled = True
     END IF
 END SUB
 
@@ -155,13 +155,13 @@ SUB Playlist_Play
         IF AudioAnalyzer_Init(Media) THEN
             AudioAnalyzer_SetStyle AnalyzerStyle
             _SNDPLAY Media
-            IsPlaying = TRUE
+            IsPlaying = True
             SetCaption PlayBT, "&Stop"
-            Control(PauseBT).Disabled = FALSE
-            Control(VisualBT).Disabled = FALSE
-            Control(VMBT).Disabled = FALSE
-            Control(VPBT).Disabled = FALSE
-            Control(SeekTrackBar).Disabled = FALSE
+            Control(PauseBT).Disabled = False
+            Control(VisualBT).Disabled = False
+            Control(VMBT).Disabled = False
+            Control(VPBT).Disabled = False
+            Control(SeekTrackBar).Disabled = False
             UpdateAppTitle
         ELSE
             _SNDCLOSE Media
@@ -176,13 +176,13 @@ SUB Playlist_Stop
         _SNDSTOP Media
         _SNDCLOSE Media
         Media = 0
-        IsPlaying = FALSE
+        IsPlaying = False
         SetCaption PlayBT, "&Play"
-        Control(PauseBT).Disabled = TRUE
-        Control(VisualBT).Disabled = TRUE
-        Control(VMBT).Disabled = TRUE
-        Control(VPBT).Disabled = TRUE
-        Control(SeekTrackBar).Disabled = TRUE
+        Control(PauseBT).Disabled = True
+        Control(VisualBT).Disabled = True
+        Control(VMBT).Disabled = True
+        Control(VPBT).Disabled = True
+        Control(SeekTrackBar).Disabled = True
         SetCaption TimeLabel, "00:00:00 / 00:00:00"
 
         BeginDraw VisLPictureBox
