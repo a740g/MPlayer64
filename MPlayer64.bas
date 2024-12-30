@@ -88,7 +88,7 @@ SUB Playlist_AddCommandLineList
 END SUB
 
 SUB Playlist_AddOpenFileDialogList
-    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, , True)
+    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME + " - Multi-select audio files...", , AUDIO_FILE_FILTERS, "Audio Files", True)
 
     IF LEN(ofdList) THEN
         DO
@@ -230,7 +230,7 @@ SUB UpdateAppTitle
 END SUB
 
 SUB LoadSoundbank
-    DIM bankFileName AS STRING: bankFileName = _OPENFILEDIALOG$(APP_NAME + " - Select MIDI soundbank...", , MIDI_SOUNDBANK_FILE_FILTERS)
+    DIM bankFileName AS STRING: bankFileName = _OPENFILEDIALOG$(APP_NAME + " - Select MIDI soundbank...", , MIDI_SOUNDBANK_FILE_FILTERS, "Soundbank Files")
     IF LEN(bankFileName) THEN
         _MIDISOUNDBANK bankFileName
         AppTitle = APP_NAME + " [" + GetSoundbankType(bankFileName) + "]"

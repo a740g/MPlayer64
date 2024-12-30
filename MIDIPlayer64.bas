@@ -461,7 +461,7 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = _OPENFILEDIALOG$(APP_NAME, , AUDIO_FILE_FILTERS, , _TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , AUDIO_FILE_FILTERS, "Audio Files", _TRUE)
 
     IF LEN(ofdList) = NULL THEN EXIT FUNCTION
 
@@ -604,7 +604,7 @@ FUNCTION OnWelcomeScreen%%
         ELSEIF k = 15360 THEN ' F2
             e = EVENT_HTTP
         ELSEIF k = 17152 THEN ' F9
-            bank = _OPENFILEDIALOG$(APP_NAME + ": Select MIDI Instrument Bank", , MIDI_SOUNDBANK_FILE_FILTERS)
+            bank = _OPENFILEDIALOG$(APP_NAME + ": Select MIDI Instrument Bank", , MIDI_SOUNDBANK_FILE_FILTERS, "Soundbank Files")
             IF LEN(bank) THEN
                 Player.bankFileName = bank
                 _MIDISOUNDBANK Player.bankFileName
