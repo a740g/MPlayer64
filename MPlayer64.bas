@@ -275,7 +275,7 @@ SUB __UI_BeforeUpdateDisplay
     'This event occurs at approximately 60 frames per second.
     'You can change the update frequency by calling SetFrameRate DesiredRate%
     IF Media _ANDALSO IsPlaying THEN
-        IF _NEGATE _SNDPLAYING(Media) _ANDALSO _NEGATE _SNDPAUSED(Media) THEN
+        IF NOT _SNDPLAYING(Media) _ANDALSO NOT _SNDPAUSED(Media) THEN
             Playlist_Stop
         ELSE
             AudioAnalyzer_Update
