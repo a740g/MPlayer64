@@ -3,8 +3,6 @@
 ':
 ': This program uses
 ': InForm GUI engine for QB64-PE - v1.5.6
-': Fellippe Heitor, (2016 - 2022) - @FellippeHeitor
-': Samuel Gomes, (2023 - 2024) - @a740g
 ': https://github.com/a740g/InForm-PE
 '-----------------------------------------------------------
 
