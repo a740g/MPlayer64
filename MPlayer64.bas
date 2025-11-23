@@ -67,14 +67,14 @@ DIM SHARED VisRPictureBox AS LONG
 DIM SHARED TimeLabel AS LONG
 
 ': External modules: ---------------------------------------------------------------
-'$INCLUDE:'toolbox64/AudioAnalyzer.bi'
+'$INCLUDE:'toolbox64/Audio/AudioVisualizer.bi'
 '$INCLUDE:'inform-pe/InForm/extensions/Pathname.bi'
 '$INCLUDE:'inform-pe/InForm/InForm.bi'
 '$INCLUDE:'inform-pe/InForm/xp.uitheme'
 '$INCLUDE:'MPlayer64.frm'
 '$INCLUDE:'inform-pe/InForm/InForm.ui'
 '$INCLUDE:'inform-pe/InForm/extensions/Pathname.bas'
-'$INCLUDE:'toolbox64/AudioAnalyzer.bas'
+'$INCLUDE:'toolbox64/Audio/AudioVisualizer.bas'
 
 ': User procedures: ----------------------------------------------------------------
 SUB Playlist_AddCommandLineList
