@@ -1,9 +1,8 @@
 ': QB64-PE Audio Player
-': Copyright (c) 2024 Samuel Gomes
+': Copyright (c) 2025 Samuel Gomes
 ':
-': This program uses
-': InForm GUI engine for QB64-PE - v1.5.6
-': https://github.com/a740g/InForm-PE
+': This program uses InForm-PE GUI engine v1.5.8 for QB64-PE
+': https://github.com/QB64-Phoenix-Edition/InForm-PE
 '-----------------------------------------------------------
 
 _DEFINE A-Z AS LONG
@@ -13,7 +12,7 @@ $EXEICON:'./MPlayer64.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
 $VERSIONINFO:FileDescription='MPlayer64 executable'
 $VERSIONINFO:InternalName='MPlayer64'
-$VERSIONINFO:LegalCopyright='Copyright (c) 2024, Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2025, Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:OriginalFilename='MPlayer64.exe'
 $VERSIONINFO:ProductName='MPlayer64'
